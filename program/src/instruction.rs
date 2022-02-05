@@ -8,6 +8,6 @@ use borsh::{
 };
 
 #[derive(BorshSchema, BorshSerialize, BorshDeserialize)]
-pub enum EscrowInstruction {
+pub enum SolarisAutoInstruction {
     
 }

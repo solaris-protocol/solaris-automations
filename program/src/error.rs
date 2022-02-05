@@ -10,23 +10,23 @@ use solana_program::{
 use solana_program::program_error::ProgramError;
 
 #[derive(Error, Debug, Copy, Clone)]
-pub enum AirdropError {
+pub enum SolarisAutoError {
 }
 
-impl PrintProgramError for AirdropError {
+impl PrintProgramError for SolarisAutoError {
     fn print<E>(&self) {
         msg!(&self.to_string());
     }
 }
 
-impl<T> DecodeError<T> for AirdropError {
+impl<T> DecodeError<T> for SolarisAutoError {
     fn type_of() -> &'static str {
         "Staking Error"
     }
 }
 
-impl From<AirdropError> for ProgramError {
-    fn from(e: AirdropError) -> Self {
+impl From<SolarisAutoError> for ProgramError {
+    fn from(e: SolarisAutoError) -> Self {
         ProgramError::Custom(e as u32)
     }
 }

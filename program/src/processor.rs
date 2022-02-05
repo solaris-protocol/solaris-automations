@@ -15,7 +15,7 @@ use borsh::{
 
 use spl_token::state::Account as TokenAccount;
 
-use crate::{error::AirdropError, instruction::EscrowInstruction};
+use crate::{error::SolarisAutoError, instruction::SolarisAutoInstruction};
 
 pub struct Processor;
 impl Processor {
@@ -24,7 +24,7 @@ impl Processor {
         accounts: &[AccountInfo],
         instruction_data: &[u8],
     ) -> ProgramResult {
-        let instruction = AirdropInstruction::try_from_slice(instruction_data)?;
+        let instruction = SolarisAutoInstruction::try_from_slice(instruction_data)?;
 
         match instruction {
            

@@ -1,8 +1,7 @@
 [package]
-name = "solana-escrow"
+name = "solaris-automations"
 version = "0.1.0"
 edition = "2018"
-license = "WTFPL"
 publish = false
 
 [features]
@@ -10,9 +9,9 @@ no-entrypoint = []
 
 [dependencies]
 borsh = "0.9"
-solana-program = "1.6.9"
+solana-program = "1.8.14"
 thiserror = "1.0.24"
-spl-token = {version = "3.1.1", features = ["no-entrypoint"]}
+spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
 arrayref = "0.3.6"
 
 [lib]
