@@ -9,24 +9,24 @@ use solana_program::{
     msg,
 };
 
-#[derive(Error, FromPrimitive, Debug, Copy, Clone)]
-pub enum SolarisAutoError {
+#[derive(Error, Debug, Copy, Clone, FromPrimitive)]
+pub enum PredicateError {
 }
 
-impl PrintProgramError for SolarisAutoError {
+impl PrintProgramError for PredicateError {
     fn print<E>(&self) {
         msg!(&self.to_string());
     }
 }
 
-impl<T> DecodeError<T> for SolarisAutoError {
+impl<T> DecodeError<T> for PredicateError {
     fn type_of() -> &'static str {
-        "Solarius Automations Error"
+        "Predicate Error"
     }
 }
 
-impl From<SolarisAutoError> for ProgramError {
-    fn from(e: SolarisAutoError) -> Self {
+impl From<PredicateError> for ProgramError {
+    fn from(e: PredicateError) -> Self {
         ProgramError::Custom(e as u32)
     }
 }
