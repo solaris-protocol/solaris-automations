@@ -40,26 +40,25 @@ impl Processor {
 
         let maker = next_account_info(account_info_iter)?;
         let taker = next_account_info(account_info_iter)?;
-        let predicate_contract = next_account_info(account_info_iter)?;
 
         let predicate_infos: Vec<AccountInfo> = 
             account_info_iter
                 .map(|account_info| account_info )
                 .cloned()
                 .collect();
-        
-        // TODO: fix panic
-        /* 
+
+        //TODO: fix tests. It fails when we try to send predicate_contract
+        //      as 3 account. 
+        msg!("predicate_infos[0].key is {:?}", predicate_infos[0].key);
+
         let predicate: Instruction = 
             bincode::deserialize(&predicate[..])
                 .expect("Cannot deserialize instruction");
-        */
-        /* 
+
         invoke(
             &predicate,
             &predicate_infos[..],
-        ); 
-        */ 
+        )?; 
 
         Ok(())
     }

@@ -49,7 +49,6 @@ async fn test_fill_order() {
     let mut taker_data = Account::new(0, 0, &system_program::ID);
 
     let predicate_contract = Pubkey::from_str("2TPBhV6fb7V2yJAg9qpfQHkpbEFNRLT7cTRpzPi2vzyY").unwrap();
-    let mut predicate_contract_data = Account::new(0, 0, &system_program::ID);
 
     let mut program_test = add_accounts_to_program_test(
         &[
@@ -78,7 +77,7 @@ async fn test_fill_order() {
                 &id(),
                 &maker.pubkey(),
                 &taker,
-                &taker,
+                &predicate_contract,
                 &[],
 
                 predicate,
