@@ -49,7 +49,6 @@ impl Processor {
 
         //TODO: fix tests. It fails when we try to send predicate_contract
         //      as 3 account. 
-        msg!("predicate_infos[0].key is {:?}", predicate_infos[0].key);
 
         let predicate: Instruction = 
             bincode::deserialize(&predicate[..])

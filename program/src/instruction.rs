@@ -43,7 +43,7 @@ pub fn fill_order(
         AccountMeta::new(*maker, true), // TODO: change to option signer 
                                         //       for maker or taker
         AccountMeta::new(*taker, false),
-        AccountMeta::new(*predicate_contract, false),
+        AccountMeta::new_readonly(*predicate_contract, false),
     ];
 
     //TODO: add predicate_accounts to vec `accounts`

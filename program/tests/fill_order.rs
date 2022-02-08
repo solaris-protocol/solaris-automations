@@ -68,7 +68,7 @@ async fn test_fill_order() {
     let predicate = Instruction{
         program_id: predicate_contract,
         accounts: vec![],
-        data: vec![],
+        data: vec![0,1],
     };
 
     let mut tx_fill_order = Transaction::new_with_payer(
