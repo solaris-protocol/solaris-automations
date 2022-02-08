@@ -47,9 +47,6 @@ impl Processor {
                 .cloned()
                 .collect();
 
-        //TODO: fix tests. It fails when we try to send predicate_contract
-        //      as 3 account. 
-
         let predicate: Instruction = 
             bincode::deserialize(&predicate[..])
                 .expect("Cannot deserialize instruction");
