@@ -2,6 +2,7 @@ pub mod error;
 pub mod instruction;
 pub mod processor;
 pub mod state;
+pub mod helpers;
 
 #[cfg(not(feature = "no-entrypoint"))]
 pub mod entrypoint;

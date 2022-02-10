@@ -10,7 +10,11 @@ use borsh::{
     BorshDeserialize,
 };
 
-use crate::{instruction::SolarisAutoInstruction, error::SolarisAutoError};
+use crate::{
+    instruction::SolarisAutoInstruction, 
+    error::SolarisAutoError,
+    helpers::check_predicate,
+};
 
 pub struct Processor;
 impl Processor {
@@ -47,14 +51,11 @@ impl Processor {
                 .cloned()
                 .collect();
 
-        let predicate: Instruction = 
-            bincode::deserialize(&predicate[..])
-                .expect("Cannot deserialize instruction");
-
-        invoke(
+        check_predicate(
             &predicate,
             &predicate_infos[..],
-        )?; 
+        )
+        .expect("Predicate invoke failed"); 
 
         Ok(())
     }

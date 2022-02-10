@@ -19,6 +19,7 @@ use solaris_automations::{
     id,
     processor::Processor,
     instruction::fill_order,
+    helpers::HELPER_ADD_ID,
 };
 
 pub fn add_accounts_to_program_test(
@@ -69,6 +70,77 @@ async fn test_fill_order() {
         program_id: predicate_contract,
         accounts: vec![],
         data: vec![0,1],
+    };
+
+    let mut tx_fill_order = Transaction::new_with_payer(
+        &[
+            fill_order(
+                &id(),
+                &maker.pubkey(),
+                &taker,
+                &predicate_contract,
+                &[],
+
+                predicate,
+            )
+        ],
+        Some(&maker.pubkey()),
+    );
+    tx_fill_order.sign(&[&maker], context.last_blockhash);
+
+    assert!(
+        context
+            .banks_client
+            .process_transaction(tx_fill_order)
+            .await
+            .is_ok()
+    );
+}
+
+#[tokio::test]
+async fn test_fill_order_and() {
+    let maker = Keypair::new();
+    let mut maker_data = Account::new(5_000, 0, &system_program::ID);
+
+    let taker = Pubkey::new_rand();
+    let mut taker_data = Account::new(0, 0, &system_program::ID);
+
+    let predicate_contract = Pubkey::from_str("2TPBhV6fb7V2yJAg9qpfQHkpbEFNRLT7cTRpzPi2vzyY").unwrap();
+
+    let mut program_test = add_accounts_to_program_test(
+        &[
+            (&maker.pubkey(), maker_data),
+            (&taker, taker_data),
+        ]
+    );
+
+    program_test.add_program(
+        "predicate_example",
+        predicate_contract,
+        None,
+    );
+
+    let mut context = program_test.start_with_context().await;
+
+    let and_instructions = bincode::serialize(&vec![
+        Instruction{
+            program_id: predicate_contract,
+            accounts: vec![],
+            data: vec![0,1],
+        },
+        Instruction{
+            program_id: predicate_contract,
+            accounts: vec![],
+            data: vec![0,1],
+        },
+    ]).unwrap();
+
+    let predicate = Instruction{
+        program_id: Pubkey::new(HELPER_ADD_ID),
+        accounts: vec![
+            AccountMeta::new_readonly(predicate_contract, false),
+        ],
+        data: and_instructions,
     };
 
     let mut tx_fill_order = Transaction::new_with_payer(
