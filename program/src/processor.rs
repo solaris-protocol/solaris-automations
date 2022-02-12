@@ -51,11 +51,7 @@ impl Processor {
                 .cloned()
                 .collect();
 
-        check_predicate(
-            &predicate,
-            &predicate_infos[..],
-        )
-        .expect("Predicate invoke failed"); 
+        check_predicate(&predicate, &predicate_infos[..])?;
 
         Ok(())
     }

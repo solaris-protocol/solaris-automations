@@ -11,6 +11,18 @@ use solana_program::{
 
 #[derive(Error, FromPrimitive, Debug, Copy, Clone)]
 pub enum SolarisAutoError {
+    #[error("Predicate failed")]
+    PredicateFail,
+    #[error("Cannot deserialize predicate instruction")]
+    IncorrectPredicateInst,
+    #[error("Predicate AND failed")]
+    PredicateAndFail,
+    #[error("Cannot deserialize instructions for helper AND")]
+    IncorrectInstrAnd,
+    #[error("Predicate OR failed")]
+    PredicateOrFail,
+    #[error("Cannot deserialize instructions for helper OR")]
+    IncorrectInstrOr,
 }
 
 impl PrintProgramError for SolarisAutoError {
@@ -21,7 +33,7 @@ impl PrintProgramError for SolarisAutoError {
 
 impl<T> DecodeError<T> for SolarisAutoError {
     fn type_of() -> &'static str {
-        "Solarius Automations Error"
+        "Solaris Automations Error"
     }
 }
 

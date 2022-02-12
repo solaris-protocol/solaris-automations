@@ -19,7 +19,7 @@ use solaris_automations::{
     id,
     processor::Processor,
     instruction::fill_order,
-    helpers::HELPER_ADD_ID,
+    helpers::{HELPER_AND_ID, HELPER_OR_ID},
 };
 
 pub fn add_accounts_to_program_test(
@@ -44,7 +44,7 @@ pub fn add_accounts_to_program_test(
 #[tokio::test]
 async fn test_fill_order() {
     let maker = Keypair::new();
-    let mut maker_data = Account::new(5_000, 0, &system_program::ID);
+    let mut maker_data = Account::new(10_000, 0, &system_program::ID);
 
     let taker = Pubkey::new_rand();
     let mut taker_data = Account::new(0, 0, &system_program::ID);
@@ -122,7 +122,7 @@ async fn test_fill_order_and() {
 
     let mut context = program_test.start_with_context().await;
 
-    let and_instructions = bincode::serialize(&vec![
+    let and_instructions_ok = bincode::serialize(&vec![
         Instruction{
             program_id: predicate_contract,
             accounts: vec![],
@@ -135,15 +135,15 @@ async fn test_fill_order_and() {
         },
     ]).unwrap();
 
-    let predicate = Instruction{
-        program_id: Pubkey::new(HELPER_ADD_ID),
+    let predicate_ok = Instruction{
+        program_id: Pubkey::new(HELPER_AND_ID),
         accounts: vec![
             AccountMeta::new_readonly(predicate_contract, false),
         ],
-        data: and_instructions,
+        data: and_instructions_ok,
     };
 
-    let mut tx_fill_order = Transaction::new_with_payer(
+    let mut tx_fill_order_ok = Transaction::new_with_payer(
         &[
             fill_order(
                 &id(),
@@ -152,18 +152,65 @@ async fn test_fill_order_and() {
                 &predicate_contract,
                 &[],
 
-                predicate,
+                predicate_ok,
             )
         ],
         Some(&maker.pubkey()),
     );
-    tx_fill_order.sign(&[&maker], context.last_blockhash);
+    tx_fill_order_ok.sign(&[&maker], context.last_blockhash);
 
     assert!(
         context
             .banks_client
-            .process_transaction(tx_fill_order)
+            .process_transaction(tx_fill_order_ok)
             .await
             .is_ok()
+    );
+
+    // Test for predicate Err
+    let and_instructions_err = bincode::serialize(&vec![
+        Instruction{
+            program_id: predicate_contract,
+            accounts: vec![],
+            data: vec![0,1],
+        },
+        // Instruction that return Err
+        Instruction{
+            program_id: predicate_contract,
+            accounts: vec![],
+            data: vec![0,0], 
+        },
+    ]).unwrap();
+
+    let predicate_err = Instruction{
+        program_id: Pubkey::new(HELPER_AND_ID),
+        accounts: vec![
+            AccountMeta::new_readonly(predicate_contract, false),
+        ],
+        data: and_instructions_err,
+    };
+
+    let mut tx_fill_order_err = Transaction::new_with_payer(
+        &[
+            fill_order(
+                &id(),
+                &maker.pubkey(),
+                &taker,
+                &predicate_contract,
+                &[],
+
+                predicate_err,
+            )
+        ],
+        Some(&maker.pubkey()),
+    );
+    tx_fill_order_err.sign(&[&maker], context.last_blockhash);
+
+    assert!(
+        context
+            .banks_client
+            .process_transaction(tx_fill_order_err)
+            .await
+            .is_err()
     );
 }
