@@ -13,10 +13,11 @@ pub enum SolarisAutoInstruction {
     /// 
     /// 0. `[writable]` Maker account
     /// 1. `[writable]` Taker account 
-    /// 2. `[]` Predicate contract account
-    /// *TODO* 3. `[writable]` PDA order. Seeds: []  
-    /// 4.. Accounts that required by predicate instruction
-    FillOrder { // TODO: Data has to be in PDA order
+    /// 2. `[]` Sysvar instructions
+    /// 3. `[]` Predicate contract account
+    /// *TODO* 4. `[writable]` PDA order. Seeds: []  
+    /// 5.. Accounts that required by predicate instruction
+    FillOrder { 
         predicate: Vec<u8>,
     }
 }

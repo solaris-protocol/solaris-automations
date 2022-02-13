@@ -1,19 +1,19 @@
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    instruction::Instruction,
-    program::{invoke},
     pubkey::Pubkey,
     msg,
+    sysvar,
+    keccak,
 };
 use borsh::{
     BorshDeserialize,
 };
 
 use crate::{
-    instruction::SolarisAutoInstruction, 
-    error::SolarisAutoError,
+    instruction::SolarisAutoInstruction,
     helpers::check_predicate,
+    verify_sign::is_valid_signature,
 };
 
 pub struct Processor;
@@ -44,12 +44,16 @@ impl Processor {
 
         let maker = next_account_info(account_info_iter)?;
         let taker = next_account_info(account_info_iter)?;
+        let sysvar_instr = next_account_info(account_info_iter)?;
 
         let predicate_infos: Vec<AccountInfo> = 
             account_info_iter
                 .map(|account_info| account_info )
                 .cloned()
                 .collect();
+
+        let order_hash = keccak::hash(&predicate);
+        is_valid_signature(maker.key, order_hash.as_ref(), sysvar_instr)?;
 
         check_predicate(&predicate, &predicate_infos[..])?;
 

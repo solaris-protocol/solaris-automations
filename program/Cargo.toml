@@ -9,21 +9,23 @@ no-entrypoint = []
 test-bpf = []
 
 [dependencies]
-borsh = "0.9"
-serde = {version = "1.0.136", features = ["derive"]} 
-bincode = "1.3.3"
 solana-program = "1.8.14"
-thiserror = "1.0.24"
 spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
+serde = {version = "1.0.136", features = ["derive"]} 
+borsh = "0.9"
+bincode = "1.3.3"
+thiserror = "1.0.24"
 arrayref = "0.3.6"
 num-derive = "0.3"
 num-traits = "0.2"
+byteorder = "1.4.3"
 
 [dev-dependencies]
 assert_matches = "1.5.0"
 solana-program-test = "1.8.14"
 solana-sdk = "1.8.14"
 spl-token = "3.2.0"
+ed25519-dalek = "1.0.1"
 
 [lib]
 crate-type = ["cdylib", "lib"]

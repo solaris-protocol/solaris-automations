@@ -1,6 +1,7 @@
 use solana_program::{
     pubkey::Pubkey,
     instruction::{Instruction, AccountMeta},
+    sysvar,
 };
 use borsh::{
     BorshSerialize,     
@@ -17,10 +18,11 @@ pub enum SolarisAutoInstruction {
     /// 
     /// 0. `[writable]` Maker account
     /// 1. `[writable]` Taker account 
-    /// 2. `[]` Predicate contract account
-    /// *TODO* 3. `[writable]` PDA order. Seeds: []  
-    /// 4.. Accounts that required by predicate instruction
-    FillOrder { // TODO: Data has to be in PDA order
+    /// 2. `[]` Sysvar instructions
+    /// 3. `[]` Predicate contract account
+    /// *TODO* 4. `[writable]` PDA order. Seeds: []  
+    /// 5.. Accounts that required by predicate instruction
+    FillOrder { 
         predicate: Vec<u8>,
     }
 }
@@ -32,17 +34,18 @@ pub fn fill_order(
     predicate_contract: &Pubkey,
     predicate_accounts: &[&Pubkey],
 
-    predicate: Instruction,
+    predicate: &Instruction,
 ) -> Instruction {
     let data = SolarisAutoInstruction::FillOrder {
-        predicate: bincode::serialize(&predicate).unwrap(),
+        predicate: bincode::serialize(predicate).unwrap(),
     }
     .try_to_vec().unwrap();
 
-    let mut accounts = vec![
+    let accounts = vec![
         AccountMeta::new(*maker, true), // TODO: change to option signer 
                                         //       for maker or taker
         AccountMeta::new(*taker, false),
+        AccountMeta::new(sysvar::instructions::id(), false),    
         AccountMeta::new_readonly(*predicate_contract, false),
     ];
 

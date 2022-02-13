@@ -14,15 +14,30 @@ pub enum SolarisAutoError {
     #[error("Predicate failed")]
     PredicateFail,
     #[error("Cannot deserialize predicate instruction")]
-    IncorrectPredicateInst,
+    InvalidPredicateInst,
     #[error("Predicate AND failed")]
     PredicateAndFail,
     #[error("Cannot deserialize instructions for helper AND")]
-    IncorrectInstrAnd,
+    InvalidInstrAnd,
     #[error("Predicate OR failed")]
     PredicateOrFail,
     #[error("Cannot deserialize instructions for helper OR")]
-    IncorrectInstrOr,
+    InvalidInstrOr,
+
+    #[error("First instruction must be Ed25519 instruction")]
+    InvalidInstrIndex,
+    #[error("Program id for sign verify instruction must be Ed25519")]
+    InvalidProgramIdSignVerify,
+    #[error("Invalid instruction for Ed25519 program")]
+    InvalidInstrSignVerify,
+    #[error("Must be exactly 1 sign for order")]
+    InvalidCountSignVerify,
+    #[error("Signer must be maker")]
+    InvalidSigner,
+    #[error("Message size must be 32")]
+    InvalidMsgSize,
+    #[error("Invalid message for sign")]
+    InvalidMsg,
 }
 
 impl PrintProgramError for SolarisAutoError {

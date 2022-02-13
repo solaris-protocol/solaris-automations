@@ -2551,6 +2551,8 @@ dependencies = [
  "assert_matches",
  "bincode",
  "borsh",
+ "byteorder",
+ "ed25519-dalek",
  "num-derive",
  "num-traits",
  "serde",
