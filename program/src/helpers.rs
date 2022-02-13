@@ -108,20 +108,12 @@ mod tests {
         let invoke_plug_err = |_instr: &Instruction, _infos: &[AccountInfo]| Err(ProgramError::Custom(0));
 
         assert_eq!(
-            _check_predicate(
-                &instruction,
-                &[],
-                invoke_plug_ok,
-            ),
+            _check_predicate(&instruction, &[], invoke_plug_ok),
             Ok(())
         );
 
         assert_eq!(
-            _check_predicate(
-                &instruction,
-                &[],
-                invoke_plug_err,
-            ),
+            _check_predicate(&instruction, &[], invoke_plug_err),
             Err(ProgramError::Custom(0)),
         );
     }
@@ -153,21 +145,13 @@ mod tests {
         let invoke_plug_err = |_instr: &Instruction, _infos: &[AccountInfo]| Err(ProgramError::Custom(0));
 
         assert_eq!(
-            _check_predicate(
-                &instruction,
-                &[],
-                invoke_plug_ok,
-            ),
+            _check_predicate(&instruction, &[], invoke_plug_ok),
             Ok(())
         );
 
         assert_eq!(
-            _check_predicate(
-                &instruction,
-                &[],
-                invoke_plug_err,
-            ),
-            Err(ProgramError::Custom(2)),
+            _check_predicate(&instruction, &[], invoke_plug_err),
+            Err(ProgramError::from(SolarisAutoError::PredicateAndFail)),
         );
     }
 }

@@ -1,3 +1,5 @@
+use std::iter::Inspect;
+
 use solana_program::{
     pubkey::Pubkey,
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
@@ -23,7 +25,17 @@ pub fn is_valid_signature(
         .and_then(|current_ix| Ok((current_ix - 1) as usize))?;
 
     let _ = load_instruction_at_checked(ed_sign_ix, instructions_info)
-        .and_then(assert_sign_verify_instruction)
+        .and_then(|sig_verify| _is_valid_signature(maker_id, order_hash, sig_verify))?;
+
+    Ok(())
+}
+
+fn _is_valid_signature(
+    maker_id: &Pubkey,
+    order_hash: &[u8],
+    instruction: Instruction,
+) -> ProgramResult {
+    let _ = assert_sign_verify_instruction(instruction)
         .and_then(|instr| assert_signer_is_maker(instr, maker_id))  
         .and_then(|instr| assert_message(instr, order_hash))?;
 
@@ -107,4 +119,72 @@ fn assert_sign_verify_instruction(
     }
 
     Ok(instruction)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use solana_sdk::{
+        pubkey::Pubkey,
+        system_program,
+        instruction::{Instruction, AccountMeta},
+        signature::Signer,
+        signer::keypair::Keypair as SdkKeypair,
+        ed25519_instruction,
+        keccak,
+    };
+    use ed25519_dalek::Keypair;
+
+    #[test]
+    fn is_valid_signature() {
+        let maker = SdkKeypair::new();
+        let maker_dalek = ed25519_dalek::Keypair::from_bytes(
+            &maker.to_bytes()).unwrap();
+
+        let predicate = Instruction{
+            program_id: Pubkey::new_unique(),
+            accounts: vec![],
+            data: vec![0,1],
+        };
+
+        let encoded_predicate = bincode::serialize(&predicate).unwrap();
+        let order_hash = keccak::hash(&encoded_predicate);
+
+        let sign = ed25519_instruction::new_ed25519_instruction(
+            &maker_dalek, order_hash.as_ref(),
+        );
+            
+        assert_eq!(
+            _is_valid_signature(&maker.pubkey(), order_hash.as_ref(), sign),
+            Ok(())
+        )
+    }
+
+    #[test]
+    fn is_valid_signature_wrong_sig_count() {
+        let maker = SdkKeypair::new();
+        let maker_dalek = ed25519_dalek::Keypair::from_bytes(
+            &maker.to_bytes()).unwrap();
+
+        let predicate = Instruction{
+            program_id: Pubkey::new_unique(),
+            accounts: vec![],
+            data: vec![0,1],
+        };
+
+        let encoded_predicate = bincode::serialize(&predicate).unwrap();
+        let order_hash = keccak::hash(&encoded_predicate);
+
+        let mut sign = ed25519_instruction::new_ed25519_instruction(
+            &maker_dalek, order_hash.as_ref(),
+        );
+
+        // Set signatures count 
+        sign.data[0] = 0;
+            
+        assert_eq!(
+            _is_valid_signature(&maker.pubkey(), order_hash.as_ref(), sign),
+            Err(ProgramError::from(SolarisAutoError::InvalidCountSignVerify))
+        )
+    }
 }
