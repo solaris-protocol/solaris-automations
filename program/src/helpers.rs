@@ -4,7 +4,6 @@ use solana_program::{
     program::invoke,
     entrypoint::ProgramResult,
     program_error::ProgramError,
-    msg,
 };
 use crate::error::SolarisAutoError;
 

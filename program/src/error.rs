@@ -38,6 +38,9 @@ pub enum SolarisAutoError {
     InvalidMsgSize,
     #[error("Invalid message for sign")]
     InvalidMsg,
+
+    #[error("Cannot deserialize taker_asset_data instruction")]
+    InvalidTakerAssetData,
 }
 
 impl PrintProgramError for SolarisAutoError {

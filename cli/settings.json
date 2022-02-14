@@ -5,5 +5,15 @@
 
     "instruction_num": 0,
 
-    "payer_keypair": "/mnt/c/solana/wallet/my-keypair.json"
+    "maker_keypair": "/mnt/c/solana/wallet/my-keypair.json",
+    "taker_keypair": "/mnt/c/solana/wallet/my-keypair2.json",
+
+    "maker_asset": "ysG4S5oNwNFkVU6uxuZuuGhw8L38NURGZef99PmTC3H",
+    "taker_asset": "94PF7D3wpQ64BJrUgDVi4H4qW7LmTrtmmowCZC1jwegS",
+
+    "taker_ta_maker_asset": "8QGWaD9vMbw6hM1N5sK7UW3oNE5JRpNinghZhXvzWp7o",
+    "maker_ta_maker_asset": "8wndnSPMocSUuPkxbdtNpXKRnknsgjokMnGUM3xrPMZn",
+
+    "taker_ta_taker_asset": "4NfzL7wmepTag4n4zzmzjaNZAy4H8avBfLWS1DDyzfQW",
+    "maker_ta_taker_asset": "mxyyZ3cxNUUJDq9JvdmXjiCfAm579Jbi6WJYAdQSGyD"
 }

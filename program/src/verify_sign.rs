@@ -1,5 +1,3 @@
-use std::iter::Inspect;
-
 use solana_program::{
     pubkey::Pubkey,
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
