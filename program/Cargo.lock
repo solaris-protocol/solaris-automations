@@ -319,6 +319,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "chainlink_solana"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5e5a3c8b6ff2c7b5c668e2e64a5640db6dec6654d7b9e18671e18a8af1d4bd5"
+dependencies = [
+ "borsh",
+ "borsh-derive",
+ "solana-program",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1592,6 +1603,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pyth-client"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a99198087943003b585590a42c3e323523b94a2c9e1df3e2636ebce39535a26"
+dependencies = [
+ "borsh",
+ "borsh-derive",
+ "bytemuck",
+ "num-derive",
+ "num-traits",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
 name = "qstring"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2552,9 +2578,11 @@ dependencies = [
  "bincode",
  "borsh",
  "byteorder",
+ "chainlink_solana",
  "ed25519-dalek",
  "num-derive",
  "num-traits",
+ "pyth-client",
  "serde",
  "solana-program",
  "solana-program-test",

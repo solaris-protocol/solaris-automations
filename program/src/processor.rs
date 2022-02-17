@@ -79,7 +79,7 @@ impl Processor {
                 .collect();
 
         maker_asset_data_infos.push(delegate.clone());
-        taker_asset_data_infos.push(spl_token_info.clone());
+        //taker_asset_data_infos.push(spl_token_info.clone());
 
         let order = args.order;
         let order_hash = keccak::hash(&order.try_to_vec().unwrap()); 

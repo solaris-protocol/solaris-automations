@@ -3,4 +3,4 @@
 pub const PREFIX: &str = "solaris-automations";
 pub const DELEGATE: &str = "delegate";
 
-pub const bump_delegate: u8 = 254;
+pub const BUMP_DELEGATE: u8 = 254;

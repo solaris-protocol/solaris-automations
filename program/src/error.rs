@@ -41,6 +41,11 @@ pub enum SolarisAutoError {
 
     #[error("Cannot deserialize taker_asset_data instruction")]
     InvalidTakerAssetData,
+
+    #[error("Invalid owner program_id")]
+    InvalidOwnerProgramId,
+    #[error("Oracle predicate failed")]
+    OraclePredicateFailed
 }
 
 impl PrintProgramError for SolarisAutoError {

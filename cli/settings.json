@@ -1,6 +1,10 @@
 {
     "program_id": "CiHxDpJ424jwbKDikmxTxkLjufacAoF2kgGV5hAs9sLi",
-    "predicate_id": "2TPBhV6fb7V2yJAg9qpfQHkpbEFNRLT7cTRpzPi2vzyY",
+    "predicate_id_example": "2TPBhV6fb7V2yJAg9qpfQHkpbEFNRLT7cTRpzPi2vzyY",
+    "predicate_id": "5kwKgdtbBN4HtGHtTuhDr37vJWAxTfx8QkxFGWwFqeoq",
+
+    "pyth_price_id": "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix",
+
     "helper_and_id": "3Lf5PRfK3nibfrChcx2Hrh7g2WSgu3QBxLXSFY5WqMCA",
 
     "instruction_num": 0,

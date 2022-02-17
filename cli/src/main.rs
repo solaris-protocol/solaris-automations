@@ -8,7 +8,7 @@ use std::{
     io::Read,
 };
 use borsh::{
-    BorshSerialize,
+    BorshSerialize, BorshDeserialize, BorshSchema,
 };
 use solana_client::{ 
     rpc_client::RpcClient,
@@ -35,12 +35,19 @@ pub const SETTINGS_PATH: &str = "settings.json";
 pub const PREFIX: &str = "solaris-automations";
 pub const DELEGATE: &str = "delegate";
 
+#[derive(BorshDeserialize, BorshSchema, BorshSerialize)]
+pub struct HelperPythPrice {
+    amount: u64,
+    less_than_pyth_price: bool,
+}
+
 fn main() -> Result<(), Box<dyn Error>>{
     let client = RpcClient::new("https://api.devnet.solana.com/".to_string());
 
     let settings = parse_settings_json(SETTINGS_PATH)?;
     let program_id = settings["program_id"].as_str().unwrap();
     let predicate_id = settings["predicate_id"].as_str().unwrap();
+    let pyth_price = settings["pyth_price_id"].as_str().unwrap();
     let helper_and_id = settings["helper_and_id"].as_str().unwrap();
     let instruction = settings["instruction_num"].as_u64().unwrap();
     let maker_keypair = settings["maker_keypair"].as_str().unwrap();
@@ -52,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>>{
     let maker_ta_maker_asset = settings["maker_ta_maker_asset"].as_str().unwrap();
     let taker_ta_taker_asset = settings["taker_ta_taker_asset"].as_str().unwrap();
     let maker_ta_taker_asset = settings["maker_ta_taker_asset"].as_str().unwrap();
-    
+
     let maker_keypair = read_keypair_file(maker_keypair)
         .unwrap_or_else(|error| {
             panic!("Couldn't parse maker keypair: {}", error);
@@ -68,6 +75,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 
     let program_id = Pubkey::from_str(program_id)?;
     let predicate_id = Pubkey::from_str(predicate_id)?;
+    let pyth_price = Pubkey::from_str(pyth_price)?;
     let helper_and_id = Pubkey::from_str(helper_and_id)?;
     let maker_asset = Pubkey::from_str(maker_asset)?;
     let taker_asset = Pubkey::from_str(taker_asset)?;
@@ -79,16 +87,22 @@ fn main() -> Result<(), Box<dyn Error>>{
 
     let instruction = match instruction {
         0 => {
+            let helper_pyth_istr_data = HelperPythPrice {
+                amount: 100_000_000_000,
+                less_than_pyth_price: false,
+            }
+            .try_to_vec().unwrap();
+
             let instr_and = bincode::serialize(&vec![
                 Instruction{
                     program_id: predicate_id,
                     accounts: vec![],
-                    data: vec![0,1],
+                    data: helper_pyth_istr_data.clone(),
                 },
                 Instruction{
                     program_id: predicate_id,
                     accounts: vec![],
-                    data: vec![0,1],
+                    data: helper_pyth_istr_data.clone(),
                 },
             ]).unwrap();
 
@@ -126,7 +140,7 @@ fn main() -> Result<(), Box<dyn Error>>{
                     &maker_keypair.pubkey(),
                     &taker_keypair.pubkey(),
                     &get_pda_delegate_id(&program_id),
-                    &[predicate_id],
+                    &[predicate_id, pyth_price],
                     &[maker_ta_maker_asset, taker_ta_maker_asset],
                     &[taker_ta_taker_asset, maker_ta_taker_asset, taker_keypair.pubkey()],
 
