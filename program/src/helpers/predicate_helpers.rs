@@ -1,29 +1,19 @@
-use borsh::{BorshSerialize, BorshDeserialize, BorshSchema};
 use solana_program::{
-    account_info::{AccountInfo, next_account_info},
+    account_info::AccountInfo,
     instruction::Instruction,
     program::invoke,
     entrypoint::ProgramResult,
     program_error::{ProgramError, PrintProgramError},
-    pubkey::Pubkey,
-    msg,
 };
-use byteorder::ByteOrder;
-use std::{str::FromStr, convert::TryInto};
-use chainlink_solana; 
-use pyth_client;
 
 use crate::{
     error::SolarisAutoError,
-    utils::{
-        assert_owned_by,
-    }
 };
+
+use super::oracle_price;
 
 //Pubkey is "3Lf5PRfK3nibfrChcx2Hrh7g2WSgu3QBxLXSFY5WqMCA"
 pub const HELPER_AND_ID: &[u8] = &[34, 192, 118, 35, 128, 32, 126, 54, 71, 146, 146, 47, 241, 227, 117, 146, 224, 12, 197, 13, 212, 150, 35, 113, 137, 30, 41, 185, 2, 214, 159, 231];
-//Pubkey is "5kwKgdtbBN4HtGHtTuhDr37vJWAxTfx8QkxFGWwFqeoq"
-pub const HELPER_PYTH_ID: &[u8] = &[70, 176, 37, 12, 106, 201, 74, 156, 64, 246, 254, 0, 195, 85, 90, 97, 88, 148, 195, 146, 24, 6, 246, 114, 86, 228, 185, 63, 193, 54, 105, 176];
 
 pub fn check_predicate(
     inst: &[u8],
@@ -64,8 +54,8 @@ fn invoke_predicate(
     accounts: &[AccountInfo],
 ) -> ProgramResult {
     match instr.program_id.as_ref() {
-        HELPER_PYTH_ID => {
-            process_pyth_price(instr, accounts)
+        oracle_price::HELPER_PYTH_ID => {
+            oracle_price::process_pyth_price(instr, accounts)
         },
         _ => invoke(instr, accounts)
     }
@@ -108,62 +98,6 @@ fn process_or(
     }
 
     Err(SolarisAutoError::PredicateOrFail.into())
-}
-
-/// Predicate that return Ok(()) if price on Pyth data feed
-/// [more/less] than required amount
-/// 
-/// Accounts required:
-/// 
-/// 0. `[]` Helper pyth program id: 5kwKgdtbBN4HtGHtTuhDr37vJWAxTfx8QkxFGWwFqeoq
-/// 1. `[]` Pyth price account: https://pyth.network/developers/accounts/?cluster=devnet#
-/// 
-/// 
-/// Instruction data format is 
-/// ```
-/// pub struct HelperPythPrice {
-///     amount: u64,
-///     less_than_pyth_price: bool,
-/// }
-/// ```
-fn process_pyth_price(
-    instr: &Instruction,
-    accounts: &[AccountInfo],
-) -> ProgramResult {
-    let account_info_iter = &mut accounts.iter();
-
-    let program_info = next_account_info(account_info_iter)?;
-    let pyth_price_info = next_account_info(account_info_iter)?;
-    assert_owned_by(pyth_price_info, &Pubkey::from_str("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s").unwrap())?;
-    // assert_owned_by(pyth_price_info, pyth_client::ID)?;
-
-    let pyth_price = pyth_client::load_price(&pyth_price_info.data.borrow_mut())
-        .and_then(|price| {
-            let price_conf = price.get_current_price().unwrap();
-
-            Ok(price_conf)
-        })?;
-
-    msg!("price_conf is {:?}", pyth_price);
-
-    let amount = byteorder::LE::read_u64(&instr.data[0..8]);
-    let less_than_pyth_price = instr.data[8] != 0;
-
-    // TODO: comparison with conf
-    match less_than_pyth_price {
-        true => {
-            if amount >= pyth_price.price.try_into().unwrap() {
-                return Err(SolarisAutoError::OraclePredicateFailed.into())
-            }
-        },
-        false => {
-            if amount < pyth_price.price.try_into().unwrap() {
-                return Err(SolarisAutoError::OraclePredicateFailed.into())
-            }
-        }
-    }
-
-    Ok(())
 }
 
 #[cfg(test)]

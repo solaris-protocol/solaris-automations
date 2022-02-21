@@ -17,7 +17,7 @@ use crate::{
         SolarisAutoInstruction,
         FillOrderArgs,
     },
-    helpers::check_predicate,
+    helpers::predicate_helpers::check_predicate,
     verify_sign::is_valid_signature,
     utils::{
         get_seeds_delegate,
