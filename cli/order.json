@@ -1,0 +1,26 @@
+{
+    "salt": 0,
+    "maker_asset": "ysG4S5oNwNFkVU6uxuZuuGhw8L38NURGZef99PmTC3H",
+    "taker_asset": "94PF7D3wpQ64BJrUgDVi4H4qW7LmTrtmmowCZC1jwegS",
+    "maker": "8GACwwyqUoHbBoSrVZNB7EFUb1RqbWZtJSBS25tzW357",
+    "receiver": "8GACwwyqUoHbBoSrVZNB7EFUb1RqbWZtJSBS25tzW357",
+    "allowed_sender": "8GACwwyqUoHbBoSrVZNB7EFUb1RqbWZtJSBS25tzW357",
+    "making_amount": 1000000000,
+    "taking_amount": 2000000000,
+    "get_maker_amount": {
+        "instruction": {
+            "program_id": "5kwKgdtbBN4HtGHtTuhDr37vJWAxTfx8QkxFGWwFqeoq",
+            "accounts": [0,0,0,0],
+            "data": [2,0,0,0,0,1]
+        }
+    },
+    "get_taker_amount": [0,0,0,0],
+    "predicate": {
+        "instruction": {
+            "program_id": "NrTxW753Ere1QS74Eby17PDagYNCcuiVoXhVZ9e4Tzr",
+            "accounts": [0,0,0,0],
+            "data": [1,0,0,0,0]
+        }
+    },
+    "interaction": [0,0,0,0]
+}
