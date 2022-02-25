@@ -11,6 +11,8 @@ use borsh::{
     BorshSchema,
 };
 
+use crate::state::OrderStage;
+
 #[derive(BorshSchema, BorshSerialize, BorshDeserialize)]
 #[repr(C)]
 pub struct Order {
@@ -25,17 +27,20 @@ pub struct Order {
     pub get_maker_amount: Vec<u8>,
     pub get_taker_amount: Vec<u8>,
     pub predicate: Vec<u8>,
-    pub interaction: Vec<u8>,
+    pub callback: Vec<u8>,
 }
 
 #[derive(BorshSchema, BorshSerialize, BorshDeserialize)]
 #[repr(C)]
 pub struct FillOrderArgs {
-    pub order: Order,
+    pub order: Option<Order>,
     pub making_amount: u64,
     pub taking_amount: u64,
     pub threshold_amount: u64,
-    pub predicate_infos_count: u8,
+    pub get_maker_amount_infos_num: u8,
+    pub get_taker_amount_infos_num: u8, 
+    pub predicate_infos_num: u8,
+    pub callback_infos_num: u8,
 }
 
 #[derive(BorshSchema, BorshSerialize, BorshDeserialize)]
@@ -45,14 +50,45 @@ pub enum SolarisAutoInstruction {
     /// 
     /// Accounts expected:
     /// 
-    /// 0. `[writable]` Maker account
-    /// 1. `[writable]` Taker account 
-    /// 2. `[]` PDA delegate
+    /// 0. `[]` Maker account
+    /// 1. `[signer, writable]` Taker account 
     /// 3. `[]` Sysvar instructions
-    /// 4. `[]` Spl-token 
-    /// *TODO* 5. `[writable]` PDA order. Seeds: []  
-    /// 6.. Accounts that required by predicate instruction
+    /// 4. `[writable]` Onchain order. Seeds: [prefix, onchain_order, order_hash]
+    /// 5. `[]` system-program
+    /// 6.. Accounts that required by get_maker_amount instruction  
+    ///  .. Accounts that required by predicate instruction
+    /// 
+    /// OrderStage == Filled. Callback and transfers
+    /// 
+    /// .. `[writable]` Taker token-account
+    /// .. `[writable]` Maker token-account
+    /// .. `[]` delegate
+    /// .. `[]` spl-token
     FillOrder(FillOrderArgs),
+    ///
+    /// 1
+    /// 
+    /// Accounts expected:
+    /// 
+    /// 0. `[writable]` Source liquidity token account.
+    ///                     $authority can transfer $liquidity_amount.
+    /// 1. `[writable]` Destination collateral token account.
+    /// 2. `[writable]` Reserve account.
+    /// 3. `[writable]` Reserve liquidity supply SPL Token account.
+    /// 4. `[writable]` Reserve collateral SPL Token mint.
+    /// 5. `[]` Lending market account.
+    /// 6. `[]` Derived lending market authority.
+    /// 7. `[writable]` Destination deposit reserve collateral supply SPL Token account.
+    /// 8. `[writable]` Obligation account.
+    /// 9. `[signer]` Obligation owner.
+    /// 10 `[]` Pyth price oracle account.
+    /// 11 `[]` Switchboard price feed oracle account.
+    /// 12 `[signer]` User transfer authority ($authority).
+    /// 13 `[]` Clock sysvar.
+    /// 14 `[]` Token program id.
+    ProxyDepositReserveLiquidityAndObligationCollateral {
+        liquidity_amount: u64,
+    },
     ///
     /// 1
     /// Init PDA delegate. Account which must be approved for transfer 
@@ -70,41 +106,70 @@ pub fn fill_order(
     program_id: &Pubkey,
     maker: &Pubkey,
     taker: &Pubkey,
+    onchain_order: &Pubkey, 
     delegate: &Pubkey,
+    get_maker_amount_accounts: &[Pubkey],
+    get_taker_amount_accounts: &[Pubkey],
     predicate_accounts: &[Pubkey],
-    maker_asset_data_accounts: &[Pubkey],
-    taker_asset_data_accounts: &[Pubkey],
+    callback_accounts: &[Pubkey],
+    taker_ta_taker_asset_account: &Pubkey,
+    maker_ta_taker_asset_account: &Pubkey,
+    taker_ta_maker_asset_account: &Pubkey,
+    maker_ta_maker_asset_account: &Pubkey,
 
-    order: Order,
+    order: Option<Order>,
     making_amount: u64,
     taking_amount: u64,
     threshold_amount: u64,
+
+    order_stage: OrderStage,
 ) -> Instruction {
     let fill_order_args = FillOrderArgs {
         order,
         making_amount,
         taking_amount,
         threshold_amount,
-        predicate_infos_count: predicate_accounts.len() as u8,
+        get_maker_amount_infos_num: get_maker_amount_accounts.len() as u8,
+        get_taker_amount_infos_num: get_taker_amount_accounts.len() as u8,
+        predicate_infos_num: predicate_accounts.len() as u8,
+        callback_infos_num: callback_accounts.len() as u8,   
     };
 
     let data = SolarisAutoInstruction::FillOrder(fill_order_args)
         .try_to_vec().unwrap();
 
     let mut accounts = vec![
-        AccountMeta::new(*maker, true),
-        AccountMeta::new(*taker, false),
-        AccountMeta::new(*delegate, false),
+        AccountMeta::new_readonly(*maker, false),
+        AccountMeta::new(*taker, true),
         AccountMeta::new(sysvar::instructions::id(), false),    
-        AccountMeta::new(spl_token::id(), false),
+        AccountMeta::new(*onchain_order, false),
+        AccountMeta::new_readonly(system_program::ID, false),
     ];
 
+    get_maker_amount_accounts.iter()
+        .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
+    get_taker_amount_accounts.iter()
+        .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
     predicate_accounts.iter()
         .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
-    maker_asset_data_accounts.iter()
+    callback_accounts.iter()
         .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
-    taker_asset_data_accounts.iter()
-        .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
+
+    match order_stage {
+        OrderStage::Create => {
+
+        },
+        OrderStage::Filled => {
+            accounts.push(AccountMeta::new(*taker_ta_taker_asset_account, false));
+            accounts.push(AccountMeta::new(*maker_ta_taker_asset_account, false));
+            accounts.push(AccountMeta::new(*maker_ta_maker_asset_account, false));
+            accounts.push(AccountMeta::new(*taker_ta_maker_asset_account, false));
+            accounts.push(AccountMeta::new(*delegate, false));
+        }, 
+        OrderStage::Closed => {
+
+        }
+    }
 
     Instruction{
         program_id: *program_id,

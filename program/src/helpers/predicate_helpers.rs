@@ -11,6 +11,7 @@ use crate::{
 };
 
 use super::oracle_price;
+use super::get_amounts;
 
 //Pubkey is "3Lf5PRfK3nibfrChcx2Hrh7g2WSgu3QBxLXSFY5WqMCA"
 pub const HELPER_AND_ID: &[u8] = &[34, 192, 118, 35, 128, 32, 126, 54, 71, 146, 146, 47, 241, 227, 117, 146, 224, 12, 197, 13, 212, 150, 35, 113, 137, 30, 41, 185, 2, 214, 159, 231];
@@ -50,7 +51,7 @@ fn _check_predicate<F>(
 }
 
 fn invoke_predicate(
-    instr: &Instruction,
+    instr: &Instruction, 
     accounts: &[AccountInfo],
 ) -> ProgramResult {
     match instr.program_id.as_ref() {

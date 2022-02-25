@@ -1,13 +1,17 @@
 {
     "program_id": "CiHxDpJ424jwbKDikmxTxkLjufacAoF2kgGV5hAs9sLi",
-    "predicate_id_example": "2TPBhV6fb7V2yJAg9qpfQHkpbEFNRLT7cTRpzPi2vzyY",
-    "predicate_id": "5kwKgdtbBN4HtGHtTuhDr37vJWAxTfx8QkxFGWwFqeoq",
+    "predicate_id_disabled": "2TPBhV6fb7V2yJAg9qpfQHkpbEFNRLT7cTRpzPi2vzyY",
+    "predicate_id_dis": "5kwKgdtbBN4HtGHtTuhDr37vJWAxTfx8QkxFGWwFqeoq",
+
+    "predicate_id": "NrTxW753Ere1QS74Eby17PDagYNCcuiVoXhVZ9e4Tzr",
+
+    "custom_get_amounts": "NrTxW753Ere1QS74Eby17PDagYNCcuiVoXhVZ9e4Tzr",
 
     "pyth_price_id": "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix",
 
     "helper_and_id": "3Lf5PRfK3nibfrChcx2Hrh7g2WSgu3QBxLXSFY5WqMCA",
 
-    "instruction_num": 0,
+    "instruction_num": 2,
 
     "maker_keypair": "/mnt/c/solana/wallet/my-keypair.json",
     "taker_keypair": "/mnt/c/solana/wallet/my-keypair2.json",
@@ -19,5 +23,31 @@
     "maker_ta_maker_asset": "8wndnSPMocSUuPkxbdtNpXKRnknsgjokMnGUM3xrPMZn",
 
     "taker_ta_taker_asset": "4NfzL7wmepTag4n4zzmzjaNZAy4H8avBfLWS1DDyzfQW",
-    "maker_ta_taker_asset": "mxyyZ3cxNUUJDq9JvdmXjiCfAm579Jbi6WJYAdQSGyD"
+    "maker_ta_taker_asset": "mxyyZ3cxNUUJDq9JvdmXjiCfAm579Jbi6WJYAdQSGyD",
+
+    "making_amount": 2000000000,
+    "taking_amount": 2000000000,
+
+    "order_stage": "Filled",
+
+    "salt": 10,
+    
+    "solend_program_id": "So1endDq2YkqhipRh3WViPa8hdiSpxWy6z3Z6tMCpAo",
+    
+    "obligation_owner": "/mnt/c/solana/wallet/phantom/phantom_main.json",
+    
+    "solend_reserve": "BgxfHJDzm44T7XG68MYKx7YisTjZu73tVovyZSjJMpmw",
+    "solend_pyth_price": "Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD",
+    "solend_switchboard_price": "CZx29wKMUxaJDq6aLVQTdViPL754tTR64NAgQBUGxxHb",
+    
+    "solend_obligation": "BgDUktsHBWoVudZ1WSbyTiWWSsPkk335ymCVgs13fr4y",
+
+    "solend_source_withdraw_reserve_collateral": "UtRy8gcEu9fCkDuUrU8EmC7Uc6FZy5NCwttzG7i6nkw",
+    "solend_destination_collateral": "21waTQzDESwaYdBdzyKPNj65A26hAM412QqQXjcrCFyc",
+    "solend_lending_market": "4UpD2fh7xH3VP9QQaXtsS1YY3bxzWhtfpks7FatyKvdY",
+    "solend_derived_lending_market_authority": "DdZR6zRFiUt4S5mg7AV1uKB2z1f1WzcNYCaTEEWPAuby",
+    "solend_user_liquidity_token_account": "CDQcpAyf2cp6WPkmiGw6CHYoLtEJy2x9U6X2uMWNRtaA",
+    "solend_reserve_collateral_mint": "993dVFL2uXWYeoXuEBFXR4BijeXdTv4s6BzsCjJZuwqk",
+    "solend_reserve_liquidity_token_account": "8SheGtsopRUDzdiD6v6BR9a6bqZ9QwywYQY99Fp5meNf"
+        
 }

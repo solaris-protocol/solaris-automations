@@ -45,7 +45,15 @@ pub enum SolarisAutoError {
     #[error("Invalid owner program_id")]
     InvalidOwnerProgramId,
     #[error("Oracle predicate failed")]
-    OraclePredicateFailed
+    OraclePredicateFailed,
+
+    #[error("Order already closed")]
+    OrderClosed,
+
+    #[error("Data type missmatch")]
+    DataTypeMissmatch,
+    #[error("Order must be provided in first fill")]
+    OrderIsNone,
 }
 
 impl PrintProgramError for SolarisAutoError {
