@@ -7,11 +7,15 @@ use solana_program::{
     system_instruction,
     msg,
     keccak,
+    sysvar::Sysvar,
+    rent::Rent,
+    instruction::{Instruction, AccountMeta},
 };
 use borsh::{
     BorshDeserialize,
     BorshSerialize,
 };
+use byteorder::{ByteOrder, LittleEndian};
 
 use crate::{
     helpers::{
@@ -34,8 +38,11 @@ use crate::{
     },
     utils::{
         get_seeds_delegate,
+        get_seeds_collateral_ta,
         get_bump_onchain_order,
         create_onchain_order,
+        create_collateral_token_account,
+        solend_init_obligation,
     },
 };
 
@@ -58,12 +65,17 @@ impl Processor {
                 liquidity_amount,
             } => {
                 msg!("Instruction: ProxyDepositReserveLiquidityAndObligationCollateral");
-                Self::process_proxy_deposit_reserve_liquidity_and_obligation_collateral(program_id, accounts, args)
-            }
+                Self::process_proxy_deposit_reserve_liquidity_and_obligation_collateral(program_id, accounts, liquidity_amount)
+            },
             SolarisAutoInstruction::InitDelegate
             => {
                 msg!("Instruction: InitDelegate");
                 Self::process_init_delegate(program_id, accounts)
+            }
+            SolarisAutoInstruction::InitSolendAccountsForDelegate
+            => {
+                msg!("Instruction: InitSolendAccountsForDelegate");
+                Self::process_init_solend_accounts_for_delegate(program_id, accounts)
             }
         }
     }
@@ -260,7 +272,7 @@ impl Processor {
 
                 onchain_order.stage = OrderStage::Closed;
                 
-                onchain_order.serialize(&mut *onchain_order_info.data.borrow_mut())?;
+                //onchain_order.serialize(&mut *onchain_order_info.data.borrow_mut())?;
             },
             OrderStage::Closed => {
                 return Err(SolarisAutoError::OrderClosed.into())
@@ -275,6 +287,221 @@ impl Processor {
         accounts: &[AccountInfo],
         liquidity_amount: u64,
     ) -> ProgramResult {
+        let account_info_iter = &mut accounts.iter();
+
+        let mut solend_deposit_infos: Vec<AccountInfo> = 
+            account_info_iter
+                .take(12)
+                .cloned()
+                .collect();
+
+        let transfer_authority = next_account_info(account_info_iter)?;
+        let clock = next_account_info(account_info_iter)?;
+        let token_program = next_account_info(account_info_iter)?;
+        let solend_program = next_account_info(account_info_iter)?;
+        
+        solend_deposit_infos.push(transfer_authority.clone()); // 12
+        solend_deposit_infos.push(clock.clone()); // 13
+        solend_deposit_infos.push(token_program.clone()); // 14
+
+        let refresh_reserve = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_deposit_infos[2].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[10].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[11].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
+            ],
+            data: vec![3],
+        };
+
+        invoke_signed(
+            &refresh_reserve,
+            &solend_deposit_infos,
+            &[&get_seeds_delegate()],
+        )?;
+
+        let mut data = [0; 9];
+        LittleEndian::write_u64(&mut data[1..9], liquidity_amount);
+        data[0] = 4;
+
+        let deposit = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_deposit_infos[0].key, false),
+                AccountMeta::new(*solend_deposit_infos[1].key, false),
+                AccountMeta::new(*solend_deposit_infos[2].key, false),
+                AccountMeta::new(*solend_deposit_infos[3].key, false),
+                AccountMeta::new(*solend_deposit_infos[4].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[5].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[6].key, false),
+                AccountMeta::new(*solend_deposit_infos[7].key, false),
+                AccountMeta::new(*solend_deposit_infos[8].key, false),
+                AccountMeta::new(*solend_deposit_infos[9].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[10].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[11].key, false),
+                AccountMeta::new(*solend_deposit_infos[12].key, true),
+                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[14].key, false),
+            ],
+            data: data.to_vec(),
+        };        
+
+        invoke_signed(
+            &deposit,
+            &solend_deposit_infos,
+            &[&get_seeds_delegate()],
+        )?;
+
+        /* 
+        let deposit_reserve = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_deposit_infos[0].key, false),
+                AccountMeta::new(*solend_deposit_infos[1].key, false),
+                AccountMeta::new(*solend_deposit_infos[2].key, false),
+                AccountMeta::new(*solend_deposit_infos[3].key, false),
+                AccountMeta::new(*solend_deposit_infos[4].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[5].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[6].key, false),
+                AccountMeta::new(*solend_deposit_infos[12].key, true),
+                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[14].key, false),
+            ],
+            data: data.to_vec(),
+        };
+
+        invoke_signed(
+            &deposit_reserve,
+            &solend_deposit_infos,
+            &[&get_seeds_delegate()],
+        )?;
+
+        let refresh_reserve = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_deposit_infos[2].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[10].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[11].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
+            ],
+            data: vec![3],
+        };
+
+        data[0] = 8;
+
+        let deposit_obligation = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_deposit_infos[1].key, false), //
+                AccountMeta::new(*solend_deposit_infos[7].key, false), //
+                AccountMeta::new(*solend_deposit_infos[2].key, false), //
+                AccountMeta::new(*solend_deposit_infos[8].key, false), //
+                AccountMeta::new_readonly(*solend_deposit_infos[5].key, false),
+                AccountMeta::new(*solend_deposit_infos[9].key, false),
+                AccountMeta::new(*solend_deposit_infos[12].key, true),
+                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
+                AccountMeta::new_readonly(*solend_deposit_infos[14].key, false),
+            ],
+            data: data.to_vec(),
+        };
+
+        invoke_signed(
+            &deposit_obligation,
+            &solend_deposit_infos,
+            &[&get_seeds_delegate()],
+        )?;
+        */
+        Ok(())
+    }
+
+    pub fn process_init_solend_accounts_for_delegate(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+    ) -> ProgramResult {
+        let account_info_iter = &mut accounts.iter();
+
+        let owner_info = next_account_info(account_info_iter)?;
+        let delegate_info = next_account_info(account_info_iter)?;
+        let solend_program_info = next_account_info(account_info_iter)?;
+        let obligation_account_info = next_account_info(account_info_iter)?;
+        let lending_market_info = next_account_info(account_info_iter)?;
+        let collateral_token_account_info = next_account_info(account_info_iter)?;
+        let collateral_mint_info = next_account_info(account_info_iter)?;
+        let system_program_info = next_account_info(account_info_iter)?;
+        let token_program_info = next_account_info(account_info_iter)?;
+        let clock_info = next_account_info(account_info_iter)?;
+        let rent_info = next_account_info(account_info_iter)?;
+
+        let rent = Rent::get()?;
+        let size: u64 = 1300;
+
+        let min_rent_exempt = rent.minimum_balance(size as usize);
+
+        invoke_signed(
+            &system_instruction::create_account_with_seed(
+                owner_info.key,
+                obligation_account_info.key,
+                delegate_info.key,
+                &"GvjoVKNjBvQcFaSKUW1gTE7DxhSpjHbE69umVR5nPuQp"[0..32],
+                //&"4UpD2fh7xH3VP9QQaXtsS1YY3bxzWhtfpks7FatyKvdY"[0..32],
+                min_rent_exempt,
+                size,
+                solend_program_info.key,
+            ),
+            &[
+                owner_info.clone(),
+                obligation_account_info.clone(),
+                delegate_info.clone(),
+            ],
+            &[&get_seeds_delegate()],
+        )?;
+
+        invoke_signed(
+            &solend_init_obligation(
+                solend_program_info.key,
+                obligation_account_info.key,
+                lending_market_info.key,
+                delegate_info.key,
+            ),
+            &[
+                obligation_account_info.clone(),
+                lending_market_info.clone(),
+                delegate_info.clone(),
+                clock_info.clone(),
+                rent_info.clone(),
+                token_program_info.clone(),
+            ],
+            &[&get_seeds_delegate()],
+        )?;
+
+        invoke_signed(
+            &create_collateral_token_account(
+                owner_info.key,
+                collateral_token_account_info.key,
+            )?,
+            &[
+                owner_info.clone(),
+                collateral_token_account_info.clone(),
+                system_program_info.clone(),
+            ],
+            &[&get_seeds_collateral_ta()],
+        )?;
+
+        invoke_signed(
+            &spl_token::instruction::initialize_account3(
+                &spl_token::ID,
+                collateral_token_account_info.key,
+                collateral_mint_info.key,
+                delegate_info.key,
+            )?,
+            &[
+                collateral_token_account_info.clone(),
+                collateral_mint_info.clone(),
+                token_program_info.clone(),
+            ],
+            &[&get_seeds_collateral_ta()],
+        )?;
 
         Ok(())
     }

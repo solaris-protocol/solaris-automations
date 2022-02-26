@@ -86,11 +86,12 @@ pub enum SolarisAutoInstruction {
     /// 12 `[signer]` User transfer authority ($authority).
     /// 13 `[]` Clock sysvar.
     /// 14 `[]` Token program id.
+    /// 15 `[]` Solend program
     ProxyDepositReserveLiquidityAndObligationCollateral {
         liquidity_amount: u64,
     },
-    ///
-    /// 1
+    /// 
+    /// 2
     /// Init PDA delegate. Account which must be approved for transfer 
     /// tokens from maker token-account.
     /// 
@@ -100,6 +101,23 @@ pub enum SolarisAutoInstruction {
     /// 1. `[writable]` PDA delegate. Seeds: ["solaris-automations", "delegate", bump]
     /// 2. `[]` system-program
     InitDelegate,
+    ///
+    /// 3
+    ///
+    /// Accounts expected:
+    /// 
+    /// 0. `[signer]` Contract owner
+    /// 1. `[]` PDA delegate. Seeds: ["solaris-automations", "delegate", bump]
+    /// 2. `[]` Solend program
+    /// 3. `[writable]` Obligation account for delegate
+    /// 4. `[]` Lending market info
+    /// 5. `[writable]` Collateral token account info. Seeds: ["solaris-automations, "collateral_ta", bump]
+    /// 6. `[]` Collateral mint info
+    /// 7. `[]` System-program 
+    /// 8. `[]` Spl-token
+    /// 9. `[]` Clock
+    /// 10. `[]` Rent
+    InitSolendAccountsForDelegate,
 }
 
 pub fn fill_order(

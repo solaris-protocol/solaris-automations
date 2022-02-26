@@ -62,6 +62,7 @@ pub fn process_pyth_price(
     // TODO: comparison with conf
     match less_than_pyth_price {
         true => {
+            msg!("Required price {} less than pyth_price", amount);
             if amount >= pyth_price.price.try_into().unwrap() {
                 return Err(SolarisAutoError::OraclePredicateFailed.into())
             }

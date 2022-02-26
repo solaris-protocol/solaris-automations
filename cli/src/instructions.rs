@@ -61,9 +61,35 @@ pub enum SolarisAutoInstruction {
     /// .. `[writable]` Taker token-account
     /// .. `[writable]` Maker token-account
     /// .. `[]` delegate
+    /// .. `[]` spl-token
     FillOrder(FillOrderArgs),
     ///
     /// 1
+    /// 
+    /// Accounts expected:
+    /// 
+    /// 0. `[writable]` Source liquidity token account.
+    ///                     $authority can transfer $liquidity_amount.
+    /// 1. `[writable]` Destination collateral token account.
+    /// 2. `[writable]` Reserve account.
+    /// 3. `[writable]` Reserve liquidity supply SPL Token account.
+    /// 4. `[writable]` Reserve collateral SPL Token mint.
+    /// 5. `[]` Lending market account.
+    /// 6. `[]` Derived lending market authority.
+    /// 7. `[writable]` Destination deposit reserve collateral supply SPL Token account.
+    /// 8. `[writable]` Obligation account.
+    /// 9. `[signer]` Obligation owner.
+    /// 10 `[]` Pyth price oracle account.
+    /// 11 `[]` Switchboard price feed oracle account.
+    /// 12 `[signer]` User transfer authority ($authority).
+    /// 13 `[]` Clock sysvar.
+    /// 14 `[]` Token program id.
+    /// 15 `[]` Solend program
+    ProxyDepositReserveLiquidityAndObligationCollateral {
+        liquidity_amount: u64,
+    },
+    /// 
+    /// 2
     /// Init PDA delegate. Account which must be approved for transfer 
     /// tokens from maker token-account.
     /// 
@@ -73,6 +99,21 @@ pub enum SolarisAutoInstruction {
     /// 1. `[writable]` PDA delegate. Seeds: ["solaris-automations", "delegate", bump]
     /// 2. `[]` system-program
     InitDelegate,
+    ///
+    /// 3
+    ///
+    /// Accounts expected:
+    /// 
+    /// 0. `[signer]` Contract owner
+    /// 1. `[]` PDA delegate. Seeds: ["solaris-automations", "delegate", bump]
+    /// 2. `[]` Solend program
+    /// 3. `[writable]` Obligation account for delegate
+    /// 4. `[]` Lending market info
+    /// 5. `[writable]` Collateral token account info. Seeds: ["solaris-automations, "collateral_ta", bump]
+    /// 6. `[]` Collateral mint info
+    /// 7. `[]` System-program 
+    /// 8. `[]` Spl-token
+    InitSolendAccountsForDelegate,
 }
 
 pub enum OrderStage {
