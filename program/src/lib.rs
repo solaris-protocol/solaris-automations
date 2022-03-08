@@ -9,4 +9,4 @@ pub mod utils;
 #[cfg(not(feature = "no-entrypoint"))]
 pub mod entrypoint;
 
-solana_program::declare_id!("mNMPYGkwTeSaNd8VJJBya989vBtim5ccnodVV6mq9Qg");
+solana_program::declare_id!("HX8vWLXQoVt4EsxMYUq7BHy1Bg9TRfc5YeRo4oqBnipP");

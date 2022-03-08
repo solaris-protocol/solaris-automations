@@ -37,7 +37,7 @@ pub const SETTINGS_PATH: &str = "settings_devnet.json";
 
 pub const PREFIX: &str = "solaris-automations";
 pub const ONCHAIN_ORDER: &str = "onchain_order";
-pub const COLLATERAL_TA: &str = "collateral_ta";
+pub const COLLATERAL_TA: &str = "collateral_ta_v2";
 pub const DELEGATE: &str = "delegate";
 
 #[derive(BorshDeserialize, BorshSchema, BorshSerialize)]
@@ -75,9 +75,13 @@ fn main() -> Result<(), Box<dyn Error>>{
 
     let solend_program_id = settings["solend_program_id"].as_str().unwrap();
 
-    let solend_reserve = settings["solend_reserve"].as_str().unwrap();
-    let solend_pyth_price = settings["solend_pyth_price"].as_str().unwrap();
-    let solend_switchboard_price = settings["solend_switchboard_price"].as_str().unwrap();
+    let solend_reserve_collateral = settings["solend_reserve_collateral"].as_str().unwrap();
+    let solend_pyth_price_collateral = settings["solend_pyth_price_collateral"].as_str().unwrap();
+    let solend_switchboard_price_collateral = settings["solend_switchboard_price_collateral"].as_str().unwrap();
+
+    let solend_reserve_liquidity = settings["solend_reserve_liquidity"].as_str().unwrap();
+    let solend_pyth_price_liquidity = settings["solend_pyth_price_liquidity"].as_str().unwrap();
+    let solend_switchboard_price_liquidity = settings["solend_switchboard_price_liquidity"].as_str().unwrap();
 
     let solend_obligation = settings["solend_obligation"].as_str().unwrap();
 
@@ -85,9 +89,9 @@ fn main() -> Result<(), Box<dyn Error>>{
     let solend_destination_collateral = settings["solend_destination_collateral"].as_str().unwrap();
     let solend_lending_market_str = settings["solend_lending_market"].as_str().unwrap();
     let solend_derived_lending_market_authority = settings["solend_derived_lending_market_authority"].as_str().unwrap();
-    let solend_user_liquidity_token_account = settings["solend_user_liquidity_token_account"].as_str().unwrap();
     let solend_reserve_collateral_mint = settings["solend_reserve_collateral_mint"].as_str().unwrap();
     let solend_reserve_liquidity_token_account = settings["solend_reserve_liquidity_token_account"].as_str().unwrap();
+    let solend_pda_liquidity_token_account = settings["solend_pda_liquidity_token_account"].as_str().unwrap();
 
     let maker_keypair = read_keypair_file(maker_keypair)
         .unwrap_or_else(|error| {
@@ -125,9 +129,13 @@ fn main() -> Result<(), Box<dyn Error>>{
 
     let solend_program_id = Pubkey::from_str(solend_program_id)?;
 
-    let solend_reserve = Pubkey::from_str(solend_reserve)?;
-    let solend_pyth_price = Pubkey::from_str(solend_pyth_price)?;
-    let solend_switchboard_price = Pubkey::from_str(solend_switchboard_price)?;
+    let solend_reserve_collateral = Pubkey::from_str(solend_reserve_collateral)?;
+    let solend_pyth_price_collateral = Pubkey::from_str(solend_pyth_price_collateral)?;
+    let solend_switchboard_price_collateral = Pubkey::from_str(solend_switchboard_price_collateral)?;
+
+    let solend_reserve_liquidity = Pubkey::from_str(solend_reserve_liquidity)?;
+    let solend_pyth_price_liquidity = Pubkey::from_str(solend_pyth_price_liquidity)?;
+    let solend_switchboard_price_liquidity = Pubkey::from_str(solend_switchboard_price_liquidity)?;
 
     let solend_obligation = Pubkey::from_str(solend_obligation)?;
 
@@ -135,9 +143,12 @@ fn main() -> Result<(), Box<dyn Error>>{
     let solend_destination_collateral = Pubkey::from_str(solend_destination_collateral)?;
     let solend_lending_market = Pubkey::from_str(solend_lending_market_str)?;
     let solend_derived_lending_market_authority = Pubkey::from_str(solend_derived_lending_market_authority)?;
-    let solend_user_liquidity_token_account = Pubkey::from_str(solend_user_liquidity_token_account)?;
     let solend_reserve_collateral_mint = Pubkey::from_str(solend_reserve_collateral_mint)?;
     let solend_reserve_liquidity_token_account = Pubkey::from_str(solend_reserve_liquidity_token_account)?;
+   
+    let solend_obligation_account = get_obligation_account(&delegate_id, solend_lending_market_str, &solend_program_id);
+    let solend_collateral_token_account = get_pda_collateral_ta(&program_id);
+    let solend_pda_liquidity_token_account = Pubkey::from_str(solend_pda_liquidity_token_account)?;
 
     let order_stage = match order_stage {
         "Create" => OrderStage::Create,
@@ -145,7 +156,7 @@ fn main() -> Result<(), Box<dyn Error>>{
         _ => panic!("Unexpected order_stage")
     };
 
-    let instruction = match instruction {
+    let (instruction, payer) = match instruction {
         0 => {
             let helper_pyth_istr_data = HelperPythPrice {
                 amount: 100_000_000_000,
@@ -191,10 +202,10 @@ fn main() -> Result<(), Box<dyn Error>>{
                 allowed_sender: maker_keypair.pubkey(),
                 making_amount: 1_000_000_000,
                 taking_amount: 2_000_000_000,
-                get_maker_amount,
+                get_maker_amount: vec![],
                 get_taker_amount: vec![],
-                predicate,
-                callback: vec![],
+                predicate: vec![],
+                callback: vec![0,1],
             };
 
             let order_hash = keccak::hash(&order.try_to_vec().unwrap());
@@ -202,98 +213,117 @@ fn main() -> Result<(), Box<dyn Error>>{
                 &maker_keypair_dalek, order_hash.as_ref(),
             );
 
-            vec![
-                signature_inst, 
+            let (mut instructions, order) = match order_stage {
+                OrderStage::Create => (vec![signature_inst], Some(order)),
+                OrderStage::Filled => (vec![], None),
+                _ => panic!("Unexpected order_stage")
+            };
+
+            instructions.push(
                 fill_order(
                     &program_id,
                     &maker_keypair.pubkey(),
                     &taker_keypair.pubkey(),
                     &get_pda_onchain_order(&program_id, order_hash.as_ref()),
                     &delegate_id,
-                    //&[custom_get_amounts],
-                    &[],
-                    //&[custom_get_amounts],
-                    &[],
-                    &[predicate_id, pyth_price],
-                    &[], //callback
+                    &[], //get_maker_amount
+                    &[], //get_taker_amount
+                    &[], //predicate
+                    &[
+                        solend_program_id, // 0
+                        solend_source_withdraw_reserve_collateral, // 1
+                        solend_destination_collateral, // 2
+                        solend_reserve_liquidity, // 3
+                        solend_obligation, // 4
+                        solend_lending_market, // 5
+                        solend_derived_lending_market_authority, // 6 
+                        solend_pda_liquidity_token_account, // 7
+                        solend_reserve_collateral_mint, // 8
+                        solend_reserve_liquidity_token_account, // 9
+                        delegate_id, // 10
+                        delegate_id, // 11
+                        sysvar::clock::ID, // 12
+                        spl_token::ID, // 13
+                        solend_pyth_price_liquidity, // 14
+                        solend_switchboard_price_liquidity, // 15
+                    ], //callback
                     &taker_ta_taker_asset, 
                     &maker_ta_taker_asset, 
                     &taker_ta_maker_asset,
                     &maker_ta_maker_asset, 
 
-                    Some(order),
+                    order,
                     making_amount,
                     taking_amount,
                     0,
 
                     order_stage,
-                )]
+                ));
+
+            (instructions, taker_keypair)
         },
         1 => {
-            let init_delegate = init_delegate(
-                &program_id,
-                &obligation_owner.pubkey(),
-                &delegate_id,
-            );
+            let proxy_deposit = Instruction {
+                program_id,
+                accounts: vec![
+                    AccountMeta::new(solend_pda_liquidity_token_account, false), // 0
+                    AccountMeta::new(solend_destination_collateral, false), // 1
+                    AccountMeta::new(solend_reserve_liquidity, false), // 2
+                    AccountMeta::new(solend_reserve_liquidity_token_account, false), // 3
+                    AccountMeta::new(solend_reserve_collateral_mint, false), // 4
+                    AccountMeta::new(solend_lending_market, false), // 5
+                    AccountMeta::new_readonly(solend_derived_lending_market_authority, false), // 6
+                    AccountMeta::new(solend_source_withdraw_reserve_collateral, false), // 7
+                    AccountMeta::new(solend_obligation, false), // 8
+                    AccountMeta::new(delegate_id, false), // 9
+                    AccountMeta::new_readonly(solend_pyth_price_liquidity, false), // 10
+                    AccountMeta::new_readonly(solend_switchboard_price_liquidity, false), // 11
+                    AccountMeta::new(delegate_id, false), // 12
+                    AccountMeta::new_readonly(Clock::id(), false), // 13
+                    AccountMeta::new_readonly(spl_token::id(), false), // 14
+                    AccountMeta::new_readonly(solend_program_id, false), // 15
+                ],
+                data: ([1, 128, 150, 152, 0, 0, 0, 0, 0]).to_vec(),
+            };
 
-            vec![init_delegate]
+            (vec![proxy_deposit], maker_keypair)
         },
         2 => {
-            let refresh_reserve = Instruction{
-                program_id: solend_program_id,
-                accounts: vec![
-                    AccountMeta::new(solend_reserve, false),
-                    AccountMeta::new_readonly(solend_pyth_price, false),
-                    AccountMeta::new_readonly(solend_switchboard_price, false),
-                    AccountMeta::new_readonly(sysvar::clock::ID, false),
-                ],
-                data: vec![3],
-            };
+            let solend_reserve_liquidity_fee_receiver = settings["solend_reserve_liquidity_fee_receiver"].as_str().unwrap();
+            let solend_user_liquidity_token_account = settings["solend_user_liquidity_token_account"].as_str().unwrap();
 
-            let refresh_obligation = Instruction{
-                program_id: solend_program_id,
-                accounts: vec![
+            let solend_reserve_liquidity_fee_receiver = Pubkey::from_str(solend_reserve_liquidity_fee_receiver)?;
+            let solend_user_liquidity_token_account = Pubkey::from_str(solend_user_liquidity_token_account)?;
+
+            let proxy_borrow = Instruction {
+                program_id,
+                accounts: vec![                     
+                    AccountMeta::new(solend_reserve_collateral, false),
+                    AccountMeta::new_readonly(solend_pyth_price_collateral, false),
+                    AccountMeta::new_readonly(solend_switchboard_price_collateral, false),
+
+                    AccountMeta::new(solend_reserve_liquidity, false),
+                    AccountMeta::new_readonly(solend_pyth_price_liquidity, false),
+                    AccountMeta::new_readonly(solend_switchboard_price_liquidity, false),
+
+                    AccountMeta::new(solend_reserve_liquidity_token_account, false),
+                    AccountMeta::new(solend_user_liquidity_token_account, false),
+                    AccountMeta::new(solend_reserve_liquidity, false),
+                    AccountMeta::new(solend_reserve_liquidity_fee_receiver, false),
                     AccountMeta::new(solend_obligation, false),
-                    AccountMeta::new_readonly(sysvar::clock::ID, false),
-                    AccountMeta::new_readonly(solend_reserve, false),
+                    AccountMeta::new_readonly(solend_lending_market, false),
+                    AccountMeta::new_readonly(solend_derived_lending_market_authority, false),
+                    AccountMeta::new(delegate_id, false), 
+                    AccountMeta::new_readonly(Clock::id(), false),
+                    AccountMeta::new_readonly(spl_token::id(), false),
+                    AccountMeta::new_readonly(solend_program_id, false),
                 ],
-                data: vec![7],
+                data: ([2, 128, 150, 152, 0, 0, 0, 0, 0]).to_vec(),
             };
 
-            let withdraw_obligation_collaterial_and_redeem_reserve_collaterial = 
-                Instruction{
-                    program_id: solend_program_id,
-                    accounts: vec![
-                        AccountMeta::new(solend_source_withdraw_reserve_collateral, false),
-                        AccountMeta::new(solend_destination_collateral, false),
-                        AccountMeta::new(solend_reserve, false),
-                        AccountMeta::new(solend_obligation, false),
-                        AccountMeta::new_readonly(solend_lending_market, false),
-                        AccountMeta::new_readonly(solend_derived_lending_market_authority, false),
-                        AccountMeta::new(solend_user_liquidity_token_account, false),
-                        AccountMeta::new(solend_reserve_collateral_mint, false),
-                        AccountMeta::new(solend_reserve_liquidity_token_account, false),
-                        AccountMeta::new(obligation_owner.pubkey(), true),
-                        AccountMeta::new(obligation_owner.pubkey(), true),
-                        AccountMeta::new_readonly(sysvar::clock::ID, false),
-                        AccountMeta::new_readonly(spl_token::ID, false),
-                    ],
-                    data: vec![15, 255, 255, 255, 255, 255, 255, 255, 255],
-                 };
-
-            vec![
-                refresh_reserve,
-                refresh_obligation,
-                withdraw_obligation_collaterial_and_redeem_reserve_collaterial,
-            ]
+            (vec![proxy_borrow], maker_keypair)
         },
         3 => {
-            let solend_collateral_mint = settings["solend_collateral_mint"].as_str().unwrap();
-            let solend_collateral_mint = Pubkey::from_str(solend_collateral_mint)?;
-            let solend_obligation_account = get_obligation_account(
-                &delegate_id, solend_lending_market_str, &solend_program_id);
-            let solend_collateral_token_account = get_pda_collateral_ta(&program_id);
-
             let init_solend_accounts = Instruction{
                 program_id,
                 accounts: vec![
@@ -303,7 +333,7 @@ fn main() -> Result<(), Box<dyn Error>>{
                     AccountMeta::new(solend_obligation_account, false),
                     AccountMeta::new_readonly(solend_lending_market, false),
                     AccountMeta::new(solend_collateral_token_account, false),
-                    AccountMeta::new_readonly(solend_collateral_mint, false),
+                    AccountMeta::new_readonly(solend_reserve_collateral_mint, false),
                     AccountMeta::new_readonly(system_program::id(), false),
                     AccountMeta::new_readonly(spl_token::id(), false),
                     AccountMeta::new_readonly(Clock::id(), false),
@@ -312,51 +342,27 @@ fn main() -> Result<(), Box<dyn Error>>{
                 data: vec![3],
             };
 
-            vec![
-                init_solend_accounts,
-            ]
+            (vec![init_solend_accounts], obligation_owner)
         },
         4 => {
-            let solend_obligation_account = get_obligation_account(
-                &delegate_id, solend_lending_market_str, &solend_program_id);
+            let init_delegate = init_delegate(
+                &program_id,
+                &obligation_owner.pubkey(),
+                &delegate_id,
+            );
 
-            let proxy_deposit = Instruction {
-                program_id,
-                accounts: vec![
-                    AccountMeta::new(solend_user_liquidity_token_account, false), // 0
-                    AccountMeta::new(solend_destination_collateral, false), // 1
-                    AccountMeta::new(solend_reserve, false), // 2
-                    AccountMeta::new(solend_reserve_liquidity_token_account, false), // 3
-                    AccountMeta::new(solend_reserve_collateral_mint, false), // 4
-                    AccountMeta::new_readonly(solend_lending_market, false), // 5
-                    AccountMeta::new_readonly(solend_derived_lending_market_authority, false), // 6
-                    AccountMeta::new(solend_source_withdraw_reserve_collateral, false), // 7
-                    AccountMeta::new(solend_obligation, false), // 8
-                    AccountMeta::new(delegate_id, false), // 9
-                    AccountMeta::new_readonly(solend_pyth_price, false), // 10
-                    AccountMeta::new_readonly(solend_switchboard_price, false), // 11
-                    AccountMeta::new(delegate_id, false), // 12
-                    AccountMeta::new_readonly(Clock::id(), false), // 13
-                    AccountMeta::new_readonly(spl_token::id(), false), // 14
-                    AccountMeta::new_readonly(solend_program_id, false), // 15
-                ],
-                data: ([1, 255, 255, 0, 0, 0, 0, 0, 0]).to_vec(),
-            };
-
-            vec![
-                proxy_deposit
-            ]
+            (vec![init_delegate], obligation_owner)
         },
         _ => panic!("Unexpected instruction")
     };
 
     let mut transaction = Transaction::new_with_payer(
         &instruction,
-        Some(&taker_keypair.pubkey()),
+        Some(&payer.pubkey()),
     );
 
     let blockhash = client.get_recent_blockhash()?.0;
-    transaction.try_sign(&[&taker_keypair], blockhash)?;
+    transaction.try_sign(&[&payer], blockhash)?;
 
     client.send_and_confirm_transaction_with_spinner(&transaction)?;
 
@@ -388,7 +394,7 @@ pub fn get_pda_collateral_ta(program_id: &Pubkey) -> Pubkey {
         program_id,
     );
 
-    println!("bump collateral ta is {}", bump);
+    println!("pda_collateral_ta is {} with bump is {}", collateral_ta, bump);
     collateral_ta
 }
 

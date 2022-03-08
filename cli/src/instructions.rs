@@ -187,7 +187,15 @@ pub fn fill_order(
     if !callback_accounts.is_empty() {
         accounts.push(AccountMeta::new_readonly(callback_accounts[0], false));
         callback_accounts[1..].iter()
-            .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
+            .for_each(|id| {
+                if *id == sysvar::clock::ID {
+                    accounts.push(AccountMeta::new_readonly(*id, false));
+                } else if *id == spl_token::ID {
+                    accounts.push(AccountMeta::new_readonly(*id, false));
+                } else {
+                    accounts.push(AccountMeta::new(*id, false));
+                }
+            });
     }
 
     match order_stage {

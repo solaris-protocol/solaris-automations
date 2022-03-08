@@ -30,26 +30,30 @@
 
     "order_stage": "Filled",
 
-    "salt": 51513632652352,
+    "salt": 51513632652355,
     
     "solend_program_id": "ALend7Ketfx5bxh6ghsCDXAoDrhvEmsXT3cynB6aPLgx",
     
     "obligation_owner": "/mnt/c/solana/wallet/my-keypair.json",
     
-    "solend_reserve": "FNNkz4RCQezSSS71rW2tvqZH1LCkTzaiG7Nd1LeA5x5y",
-    "solend_pyth_price": "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7",
-    "solend_switchboard_price": "CZx29wKMUxaJDq6aLVQTdViPL754tTR64NAgQBUGxxHb",
+    "solend_reserve_collateral": "5VVLD7BQp8y3bTgyF5ezm1ResyMTR3PhYsT4iHFU8Sxz",
+    "solend_pyth_price_collateral": "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix",
+    "solend_switchboard_price_collateral": "AdtRGGhmqvom3Jemp5YNrxd9q9unX36BZk1pujkkXijL",
     
+    "solend_reserve_liquidity": "FNNkz4RCQezSSS71rW2tvqZH1LCkTzaiG7Nd1LeA5x5y",
+    "solend_pyth_price_liquidity": "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7",
+    "solend_switchboard_price_liquidity": "CZx29wKMUxaJDq6aLVQTdViPL754tTR64NAgQBUGxxHb",
+
     "solend_obligation": "DsJHU4HKbJdJFDvBHXHVKbZYKTrQrTHTJtidCCsUiNZj",
 
     "solend_source_withdraw_reserve_collateral": "FiUyeMAnZYkLCbrPGwjJWQwzYJ5AjD6p9N9fx6VxDPMt",
-    "solend_destination_collateral": "AaTuFBQp1tz3ioUMUM8uZCdTmVJzRD9c9gspyaii2SKt",
+    "solend_destination_collateral": "7V7xvQiYL5nTgeVnQHEW8NPJDRH9uynD42vpDTE5CbM4",
     "solend_lending_market": "GvjoVKNjBvQcFaSKUW1gTE7DxhSpjHbE69umVR5nPuQp",
     "solend_derived_lending_market_authority": "EhJ4fwaXUp7aiwvZThSUaGWCaBQAJe3AEaJJJVCn3UCK",
     "solend_user_liquidity_token_account": "AA3xpXu6j5JbnLVjekHhE39d4fXuJvusJbroinFciiEP",
+    "solend_pda_liquidity_token_account": "2aiNPPSezdhq7VkhsfZT9MJ236aCgrw6GvwRGGFSWyx9",
     "solend_reserve_collateral_mint": "E2PSSXsXJGdpqhhaV3rYPpuy1inRCQAWxcdykA1DTmYr",
     "solend_reserve_liquidity_token_account": "HixjFJoeD2ggqKgFHQxrcJFjVvE5nXKuUPYNijFg7Kc5",
-
-    "solend_collateral_mint": "FzwZWRMc3GCqjSrcpVX3ueJc6UpcV6iWWb7ZMsTXE3Gf"
-        
+    
+    "solend_reserve_liquidity_fee_receiver": "DiM1Lf3HiAVpmG3bFNVGXfGaxdUck8oZcTr3tTQfLL6P"
 }

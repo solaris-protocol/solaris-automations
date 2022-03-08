@@ -61,21 +61,27 @@ impl Processor {
                 msg!("Instruction: FillOrder");
                 Self::process_fill_order(program_id, accounts, args)
             },
-            SolarisAutoInstruction::ProxyDepositReserveLiquidityAndObligationCollateral {
+            SolarisAutoInstruction::SolendProxyDepositReserveLiquidityAndObligationCollateral {
                 liquidity_amount,
             } => {
-                msg!("Instruction: ProxyDepositReserveLiquidityAndObligationCollateral");
-                Self::process_proxy_deposit_reserve_liquidity_and_obligation_collateral(program_id, accounts, liquidity_amount)
+                msg!("Instruction: SolendProxyDepositReserveLiquidityAndObligationCollateral");
+                Self::process_solend_proxy_deposit_reserve_liquidity_and_obligation_collateral(program_id, accounts, liquidity_amount)
             },
+            SolarisAutoInstruction::SolendProxyBorrowObligationLiquidity {
+                liquidity_amount
+            } => {
+                msg!("Instruction: SolendProxyBorrowObligationLiquidity");
+                Self::process_solend_proxy_borrow_obligation_liquidity(program_id, accounts, liquidity_amount)
+            }
+            SolarisAutoInstruction::SolendInitAccountsForDelegate
+            => {
+                msg!("Instruction: SolendInitAccountsForDelegate");
+                Self::process_solend_init_accounts_for_delegate(program_id, accounts)
+            }
             SolarisAutoInstruction::InitDelegate
             => {
                 msg!("Instruction: InitDelegate");
                 Self::process_init_delegate(program_id, accounts)
-            }
-            SolarisAutoInstruction::InitSolendAccountsForDelegate
-            => {
-                msg!("Instruction: InitSolendAccountsForDelegate");
-                Self::process_init_solend_accounts_for_delegate(program_id, accounts)
             }
         }
     }
@@ -102,18 +108,6 @@ impl Processor {
         let get_taker_amount_infos: Vec<AccountInfo> =
             account_info_iter
                 .take(args.get_taker_amount_infos_num as usize)
-                .cloned()
-                .collect();
-
-        let predicate_infos: Vec<AccountInfo> = 
-            account_info_iter
-                .take(args.predicate_infos_num as usize)
-                .cloned()
-                .collect();
-
-        let callback_infos: Vec<AccountInfo> =
-            account_info_iter
-                .take(args.callback_infos_num as usize)
                 .cloned()
                 .collect();
 
@@ -185,6 +179,18 @@ impl Processor {
                 onchain_order.serialize(&mut *onchain_order_info.data.borrow_mut())?;
             },
             OrderStage::Filled => {
+                let predicate_infos: Vec<AccountInfo> = 
+                    account_info_iter
+                        .take(args.predicate_infos_num as usize)
+                        .cloned()
+                        .collect();
+
+                let callback_infos: Vec<AccountInfo> =
+                    account_info_iter
+                        .take(args.callback_infos_num as usize)
+                        .cloned()
+                        .collect();
+
                 let taker_ta_taker_asset_info = next_account_info(account_info_iter)?;
                 let maker_ta_taker_asset_info = next_account_info(account_info_iter)?;
 
@@ -195,7 +201,9 @@ impl Processor {
                 let token_program = next_account_info(account_info_iter)?;
                 // TODO: add validating for accounts (matching with order)
 
-                check_predicate(&onchain_order.predicate, &predicate_infos[..])?;
+                if !onchain_order.predicate.is_empty(){
+                    check_predicate(&onchain_order.predicate, &predicate_infos[..])?;
+                }   
 
                 // TODO: check that args.making_amount != args.taking_amount != 0
                 let (taking_amount, making_amount) = match args.making_amount {
@@ -250,6 +258,63 @@ impl Processor {
                 )?;
 
                 // TODO: callback
+                let refresh_reserve = Instruction{
+                    program_id: *callback_infos[0].key,
+                    accounts: vec![
+                        AccountMeta::new(*callback_infos[3].key, false),
+                        AccountMeta::new_readonly(*callback_infos[14].key, false),
+                        AccountMeta::new_readonly(*callback_infos[15].key, false),
+                        AccountMeta::new_readonly(*callback_infos[12].key, false),
+                    ],
+                    data: vec![3],
+                };
+    
+                let refresh_obligation = Instruction{
+                    program_id: *callback_infos[0].key,
+                    accounts: vec![
+                        AccountMeta::new(*callback_infos[4].key, false),
+                        AccountMeta::new_readonly(*callback_infos[12].key, false),
+                        AccountMeta::new_readonly(*callback_infos[3].key, false),
+                        AccountMeta::new_readonly(*callback_infos[3].key, false),
+                    ],
+                    data: vec![7],
+                };
+
+                let solend_repay = Instruction {
+                    program_id: *callback_infos[0].key,
+                    accounts: vec![
+                        AccountMeta::new(*callback_infos[1].key, false),
+                        AccountMeta::new(*callback_infos[2].key, false),
+                        AccountMeta::new(*callback_infos[3].key, false),
+                        AccountMeta::new(*callback_infos[4].key, false),
+                        AccountMeta::new_readonly(*callback_infos[5].key, false),
+                        AccountMeta::new_readonly(*callback_infos[6].key, false),
+                        AccountMeta::new(*callback_infos[7].key, false),
+                        AccountMeta::new(*callback_infos[8].key, false),
+                        AccountMeta::new(*callback_infos[9].key, false),
+                        AccountMeta::new(*callback_infos[10].key, true),
+                        AccountMeta::new(*callback_infos[11].key, true),
+                        AccountMeta::new_readonly(*callback_infos[12].key, false),
+                        AccountMeta::new_readonly(*callback_infos[13].key, false),
+                    ],
+                    data: vec![15, 128, 150, 152, 0, 0, 0, 0, 0],
+                }; 
+ 
+                invoke(
+                    &refresh_reserve,
+                    &callback_infos,
+                )?;
+
+                invoke(
+                    &refresh_obligation,
+                    &callback_infos,
+                )?;
+
+                invoke_signed(
+                    &solend_repay,
+                    &callback_infos,
+                    &[&get_seeds_delegate()],
+                )?;
 
                 // Maker => Taker
                 invoke_signed(
@@ -282,7 +347,7 @@ impl Processor {
         Ok(())
     }
 
-    pub fn process_proxy_deposit_reserve_liquidity_and_obligation_collateral(
+    pub fn process_solend_proxy_deposit_reserve_liquidity_and_obligation_collateral(
         program_id: &Pubkey,
         accounts: &[AccountInfo],
         liquidity_amount: u64,
@@ -293,7 +358,7 @@ impl Processor {
             account_info_iter
                 .take(12)
                 .cloned()
-                .collect();
+                .collect();  
 
         let transfer_authority = next_account_info(account_info_iter)?;
         let clock = next_account_info(account_info_iter)?;
@@ -304,28 +369,11 @@ impl Processor {
         solend_deposit_infos.push(clock.clone()); // 13
         solend_deposit_infos.push(token_program.clone()); // 14
 
-        let refresh_reserve = Instruction {
-            program_id: *solend_program.key,
-            accounts: vec![
-                AccountMeta::new(*solend_deposit_infos[2].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[10].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[11].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
-            ],
-            data: vec![3],
-        };
-
-        invoke_signed(
-            &refresh_reserve,
-            &solend_deposit_infos,
-            &[&get_seeds_delegate()],
-        )?;
-
         let mut data = [0; 9];
         LittleEndian::write_u64(&mut data[1..9], liquidity_amount);
-        data[0] = 4;
-
-        let deposit = Instruction {
+        data[0] = 14;
+ 
+        let solend_deposit = Instruction {
             program_id: *solend_program.key,
             accounts: vec![
                 AccountMeta::new(*solend_deposit_infos[0].key, false),
@@ -333,11 +381,11 @@ impl Processor {
                 AccountMeta::new(*solend_deposit_infos[2].key, false),
                 AccountMeta::new(*solend_deposit_infos[3].key, false),
                 AccountMeta::new(*solend_deposit_infos[4].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[5].key, false),
+                AccountMeta::new(*solend_deposit_infos[5].key, false),
                 AccountMeta::new_readonly(*solend_deposit_infos[6].key, false),
                 AccountMeta::new(*solend_deposit_infos[7].key, false),
                 AccountMeta::new(*solend_deposit_infos[8].key, false),
-                AccountMeta::new(*solend_deposit_infos[9].key, false),
+                AccountMeta::new(*solend_deposit_infos[9].key, true),
                 AccountMeta::new_readonly(*solend_deposit_infos[10].key, false),
                 AccountMeta::new_readonly(*solend_deposit_infos[11].key, false),
                 AccountMeta::new(*solend_deposit_infos[12].key, true),
@@ -348,74 +396,138 @@ impl Processor {
         };        
 
         invoke_signed(
-            &deposit,
+            &solend_deposit,
             &solend_deposit_infos,
             &[&get_seeds_delegate()],
         )?;
 
-        /* 
-        let deposit_reserve = Instruction {
-            program_id: *solend_program.key,
-            accounts: vec![
-                AccountMeta::new(*solend_deposit_infos[0].key, false),
-                AccountMeta::new(*solend_deposit_infos[1].key, false),
-                AccountMeta::new(*solend_deposit_infos[2].key, false),
-                AccountMeta::new(*solend_deposit_infos[3].key, false),
-                AccountMeta::new(*solend_deposit_infos[4].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[5].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[6].key, false),
-                AccountMeta::new(*solend_deposit_infos[12].key, true),
-                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[14].key, false),
-            ],
-            data: data.to_vec(),
-        };
-
-        invoke_signed(
-            &deposit_reserve,
-            &solend_deposit_infos,
-            &[&get_seeds_delegate()],
-        )?;
-
-        let refresh_reserve = Instruction {
-            program_id: *solend_program.key,
-            accounts: vec![
-                AccountMeta::new(*solend_deposit_infos[2].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[10].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[11].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
-            ],
-            data: vec![3],
-        };
-
-        data[0] = 8;
-
-        let deposit_obligation = Instruction {
-            program_id: *solend_program.key,
-            accounts: vec![
-                AccountMeta::new(*solend_deposit_infos[1].key, false), //
-                AccountMeta::new(*solend_deposit_infos[7].key, false), //
-                AccountMeta::new(*solend_deposit_infos[2].key, false), //
-                AccountMeta::new(*solend_deposit_infos[8].key, false), //
-                AccountMeta::new_readonly(*solend_deposit_infos[5].key, false),
-                AccountMeta::new(*solend_deposit_infos[9].key, false),
-                AccountMeta::new(*solend_deposit_infos[12].key, true),
-                AccountMeta::new_readonly(*solend_deposit_infos[13].key, false),
-                AccountMeta::new_readonly(*solend_deposit_infos[14].key, false),
-            ],
-            data: data.to_vec(),
-        };
-
-        invoke_signed(
-            &deposit_obligation,
-            &solend_deposit_infos,
-            &[&get_seeds_delegate()],
-        )?;
-        */
         Ok(())
     }
 
-    pub fn process_init_solend_accounts_for_delegate(
+    pub fn process_solend_proxy_borrow_obligation_liquidity(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+        liquidity_amount: u64,
+    ) -> ProgramResult {
+        let account_info_iter = &mut accounts.iter();
+
+        let mut solend_refresh_reserve_collateral_infos: Vec<AccountInfo> =
+            account_info_iter
+                .take(3)
+                .cloned()
+                .collect();
+
+        let mut solend_refresh_reserve_liquidity_infos: Vec<AccountInfo> = 
+            account_info_iter
+                .take(3)
+                .cloned()
+                .collect();
+
+        let mut solend_borrow_infos: Vec<AccountInfo> = 
+            account_info_iter
+                .take(7)
+                .cloned()
+                .collect();  
+
+        let obligation_owner_info = next_account_info(account_info_iter)?;
+        let clock = next_account_info(account_info_iter)?;
+        let token_program = next_account_info(account_info_iter)?;
+        let solend_program = next_account_info(account_info_iter)?;
+
+        solend_refresh_reserve_collateral_infos.push(clock.clone()); // 3
+        solend_refresh_reserve_liquidity_infos.push(clock.clone()); // 3
+        
+        solend_borrow_infos.push(obligation_owner_info.clone()); // 7
+        solend_borrow_infos.push(clock.clone()); // 8
+        solend_borrow_infos.push(token_program.clone()); // 9
+
+        let refresh_reserve_collateral = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_refresh_reserve_collateral_infos[0].key, false),
+                AccountMeta::new_readonly(*solend_refresh_reserve_collateral_infos[1].key, false),
+                AccountMeta::new_readonly(*solend_refresh_reserve_collateral_infos[2].key, false),
+                AccountMeta::new_readonly(*clock.key, false),
+            ],
+            data: vec![3],  
+        };
+
+        let refresh_reserve_liquidity = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_refresh_reserve_liquidity_infos[0].key, false),
+                AccountMeta::new_readonly(*solend_refresh_reserve_liquidity_infos[1].key, false),
+                AccountMeta::new_readonly(*solend_refresh_reserve_liquidity_infos[2].key, false),
+                AccountMeta::new_readonly(*clock.key, false),
+            ],
+            data: vec![3],  
+        };
+
+        // TODO: dont' know. It works. All questions for the token-lending program
+        let mut solend_refresh_obligation_infos = vec![
+            solend_borrow_infos[4].clone(),
+            clock.clone(),
+            solend_refresh_reserve_liquidity_infos[0].clone(),
+            solend_refresh_reserve_liquidity_infos[0].clone(),
+        ];
+
+        let refresh_obligation = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_refresh_obligation_infos[0].key, false),
+                AccountMeta::new_readonly(*solend_refresh_obligation_infos[1].key, false),
+                AccountMeta::new_readonly(*solend_refresh_obligation_infos[2].key, false),
+                AccountMeta::new_readonly(*solend_refresh_obligation_infos[3].key, false),
+            ],
+            data: vec![7],
+        };
+
+        let mut data = [0; 9];
+        LittleEndian::write_u64(&mut data[1..9], liquidity_amount);
+        data[0] = 10;
+
+        let solend_borrow = Instruction {
+            program_id: *solend_program.key,
+            accounts: vec![
+                AccountMeta::new(*solend_borrow_infos[0].key, false),
+                AccountMeta::new(*solend_borrow_infos[1].key, false),
+                AccountMeta::new(*solend_borrow_infos[2].key, false),
+                AccountMeta::new(*solend_borrow_infos[3].key, false),
+                AccountMeta::new(*solend_borrow_infos[4].key, false),
+                AccountMeta::new_readonly(*solend_borrow_infos[5].key, false),
+                AccountMeta::new_readonly(*solend_borrow_infos[6].key, false),
+                AccountMeta::new(*solend_borrow_infos[7].key, true),
+                AccountMeta::new_readonly(*solend_borrow_infos[8].key, false),
+                AccountMeta::new_readonly(*solend_borrow_infos[9].key, false),
+            ],
+            data: data.to_vec(),
+        };
+
+        invoke(
+            &refresh_reserve_collateral,
+            &solend_refresh_reserve_collateral_infos,
+        )?;
+
+        invoke(
+            &refresh_reserve_liquidity,
+            &solend_refresh_reserve_liquidity_infos,
+        )?;
+
+        invoke(
+            &refresh_obligation,
+            &solend_refresh_obligation_infos,
+        )?;
+
+        invoke_signed(
+            &solend_borrow,
+            &solend_borrow_infos,
+            &[&get_seeds_delegate()],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn process_solend_init_accounts_for_delegate(
         program_id: &Pubkey,
         accounts: &[AccountInfo],
     ) -> ProgramResult {

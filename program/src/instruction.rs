@@ -87,22 +87,41 @@ pub enum SolarisAutoInstruction {
     /// 13 `[]` Clock sysvar.
     /// 14 `[]` Token program id.
     /// 15 `[]` Solend program
-    ProxyDepositReserveLiquidityAndObligationCollateral {
+    SolendProxyDepositReserveLiquidityAndObligationCollateral {
         liquidity_amount: u64,
     },
-    /// 
+    ///
     /// 2
-    /// Init PDA delegate. Account which must be approved for transfer 
-    /// tokens from maker token-account.
     /// 
     /// Accounts expected:
     /// 
-    /// 0. `[signer]` Payer
-    /// 1. `[writable]` PDA delegate. Seeds: ["solaris-automations", "delegate", bump]
-    /// 2. `[]` system-program
-    InitDelegate,
+    /// 0. `[writable]` Reserve collateral deposit account
+    /// 1. `[]` Pyth price reserve collateral
+    /// 2. `[]` Switchboard price reserve collateral
+    /// 
+    /// 3. `[writable]` Reserve liquidity borrow account
+    /// 4. `[]` Pyth price reserve liquidity
+    /// 5. `[]` Swotchboard price reserve liquidity 
+    /// 
+    /// 6. `[writable]` Source borrow reserve liquidity supply SPL Token account.
+    /// 7. `[writable]` Destination liquidity token account.
+    ///                     Minted by borrow reserve liquidity mint.
+    /// 8. `[writable]` Borrow reserve account - refreshed.
+    /// 9. `[writable]` Borrow reserve liquidity fee receiver account.
+    ///                     Must be the fee account specified at InitReserve.
+    /// 10. `[writable]` Obligation account - refreshed.
+    /// 11 `[]` Lending market account.
+    /// 12 `[]` Derived lending market authority.
+    /// 13 `[signer]` Obligation owner.
+    /// 14 `[]` Clock sysvar.
+    /// 15 `[]` Token program id.
+    /// 16 `[optional, writable]` Host fee receiver account.
+    /// 17 `[]` Solend program
+    SolendProxyBorrowObligationLiquidity {
+        liquidity_amount: u64,
+    },
     ///
-    /// 3
+    /// 2
     ///
     /// Accounts expected:
     /// 
@@ -117,7 +136,18 @@ pub enum SolarisAutoInstruction {
     /// 8. `[]` Spl-token
     /// 9. `[]` Clock
     /// 10. `[]` Rent
-    InitSolendAccountsForDelegate,
+    SolendInitAccountsForDelegate,
+    /// 
+    /// 3
+    /// Init PDA delegate. Account which must be approved for transfer 
+    /// tokens from maker token-account.
+    /// 
+    /// Accounts expected:
+    /// 
+    /// 0. `[signer]` Payer
+    /// 1. `[writable]` PDA delegate. Seeds: ["solaris-automations", "delegate", bump]
+    /// 2. `[]` system-program
+    InitDelegate,
 }
 
 pub fn fill_order(
