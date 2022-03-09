@@ -11,11 +11,6 @@ use solana_program::{
     program_pack::Pack,                                                     
 };
 use spl_token::state::Account as TokenAccount;
-use borsh::{
-    BorshSchema,
-    BorshDeserialize,
-    BorshSerialize,
-};
 
 use crate::{
     id as program_id,

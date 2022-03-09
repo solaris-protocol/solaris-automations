@@ -20,8 +20,6 @@ pub struct Order {
     pub maker_asset: Pubkey,
     pub taker_asset: Pubkey,
     pub maker: Pubkey,
-    pub receiver: Pubkey,
-    pub allowed_sender: Pubkey,
     pub making_amount: u64,
     pub taking_amount: u64,
     pub get_maker_amount: Vec<u8>,
@@ -36,7 +34,6 @@ pub struct FillOrderArgs {
     pub order: Option<Order>,
     pub making_amount: u64,
     pub taking_amount: u64,
-    pub threshold_amount: u64,
     pub get_maker_amount_infos_num: u8,
     pub get_taker_amount_infos_num: u8, 
     pub predicate_infos_num: u8,
@@ -86,6 +83,8 @@ pub enum SolarisAutoInstruction {
     /// 12 `[signer]` User transfer authority ($authority).
     /// 13 `[]` Clock sysvar.
     /// 14 `[]` Token program id.
+    /// 15 `[]` Source user liquidity token account
+    /// 16 `[]` Maker. Owner of the account 15
     /// 15 `[]` Solend program
     SolendProxyDepositReserveLiquidityAndObligationCollateral {
         liquidity_amount: u64,
@@ -176,7 +175,6 @@ pub fn fill_order(
         order,
         making_amount,
         taking_amount,
-        threshold_amount,
         get_maker_amount_infos_num: get_maker_amount_accounts.len() as u8,
         get_taker_amount_infos_num: get_taker_amount_accounts.len() as u8,
         predicate_infos_num: predicate_accounts.len() as u8,

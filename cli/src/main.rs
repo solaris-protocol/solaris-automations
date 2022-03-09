@@ -56,6 +56,8 @@ fn main() -> Result<(), Box<dyn Error>>{
     let pyth_price = settings["pyth_price_id"].as_str().unwrap();
     let helper_and_id = settings["helper_and_id"].as_str().unwrap();
     let instruction = settings["instruction_num"].as_u64().unwrap();
+    let callback_solend_liquidation_protection_id = settings["callback_solend_liquidation_protection_id"].as_str().unwrap();
+    
     let maker_keypair = settings["maker_keypair"].as_str().unwrap();
     let taker_keypair = settings["taker_keypair"].as_str().unwrap();
     let maker_asset = settings["maker_asset"].as_str().unwrap();
@@ -92,6 +94,9 @@ fn main() -> Result<(), Box<dyn Error>>{
     let solend_reserve_collateral_mint = settings["solend_reserve_collateral_mint"].as_str().unwrap();
     let solend_reserve_liquidity_token_account = settings["solend_reserve_liquidity_token_account"].as_str().unwrap();
     let solend_pda_liquidity_token_account = settings["solend_pda_liquidity_token_account"].as_str().unwrap();
+    let solend_reserve_liquidity_fee_receiver = settings["solend_reserve_liquidity_fee_receiver"].as_str().unwrap();
+    let solend_user_liquidity_token_account = settings["solend_user_liquidity_token_account"].as_str().unwrap();
+
 
     let maker_keypair = read_keypair_file(maker_keypair)
         .unwrap_or_else(|error| {
@@ -119,11 +124,13 @@ fn main() -> Result<(), Box<dyn Error>>{
     let helper_and_id = Pubkey::from_str(helper_and_id)?;
     let maker_asset = Pubkey::from_str(maker_asset)?;
     let taker_asset = Pubkey::from_str(taker_asset)?;
+    let callback_solend_liquidation_protection_id = Pubkey::from_str(callback_solend_liquidation_protection_id)?;
 
     let taker_ta_maker_asset = Pubkey::from_str(taker_ta_maker_asset)?;
     let maker_ta_maker_asset = Pubkey::from_str(maker_ta_maker_asset)?;
     let taker_ta_taker_asset = Pubkey::from_str(taker_ta_taker_asset)?;
     let maker_ta_taker_asset = Pubkey::from_str(maker_ta_taker_asset)?;
+
 
     let delegate_id = get_pda_delegate_id(&program_id);
 
@@ -149,6 +156,8 @@ fn main() -> Result<(), Box<dyn Error>>{
     let solend_obligation_account = get_obligation_account(&delegate_id, solend_lending_market_str, &solend_program_id);
     let solend_collateral_token_account = get_pda_collateral_ta(&program_id);
     let solend_pda_liquidity_token_account = Pubkey::from_str(solend_pda_liquidity_token_account)?;
+    let solend_reserve_liquidity_fee_receiver = Pubkey::from_str(solend_reserve_liquidity_fee_receiver)?;
+    let solend_user_liquidity_token_account = Pubkey::from_str(solend_user_liquidity_token_account)?;
 
     let order_stage = match order_stage {
         "Create" => OrderStage::Create,
@@ -193,19 +202,25 @@ fn main() -> Result<(), Box<dyn Error>>{
                 })
                 .unwrap();
 
+            let callback_solend_repay = bincode::serialize(
+                &Instruction{
+                    program_id: callback_solend_liquidation_protection_id,
+                    accounts: vec![], // fill accounts
+                    data: vec![15, 128, 150, 152, 0, 0, 0, 0, 0],
+                })
+                .unwrap();
+
             let order = Order {
                 salt: salt,
                 maker_asset,
                 taker_asset,
                 maker: maker_keypair.pubkey(),
-                receiver: maker_keypair.pubkey(),
-                allowed_sender: maker_keypair.pubkey(),
                 making_amount: 1_000_000_000,
                 taking_amount: 2_000_000_000,
                 get_maker_amount: vec![],
                 get_taker_amount: vec![],
                 predicate: vec![],
-                callback: vec![0,1],
+                callback: callback_solend_repay,
             };
 
             let order_hash = keccak::hash(&order.try_to_vec().unwrap());
@@ -230,6 +245,7 @@ fn main() -> Result<(), Box<dyn Error>>{
                     &[], //get_taker_amount
                     &[], //predicate
                     &[
+                        callback_solend_liquidation_protection_id,
                         solend_program_id, // 0
                         solend_source_withdraw_reserve_collateral, // 1
                         solend_destination_collateral, // 2
@@ -281,20 +297,16 @@ fn main() -> Result<(), Box<dyn Error>>{
                     AccountMeta::new(delegate_id, false), // 12
                     AccountMeta::new_readonly(Clock::id(), false), // 13
                     AccountMeta::new_readonly(spl_token::id(), false), // 14
+                    AccountMeta::new(solend_user_liquidity_token_account, false),
+                    AccountMeta::new(maker_keypair.pubkey(), true),
                     AccountMeta::new_readonly(solend_program_id, false), // 15
                 ],
-                data: ([1, 128, 150, 152, 0, 0, 0, 0, 0]).to_vec(),
+                data: vec![1, 128, 150, 152, 0, 0, 0, 0, 0],
             };
 
             (vec![proxy_deposit], maker_keypair)
         },
         2 => {
-            let solend_reserve_liquidity_fee_receiver = settings["solend_reserve_liquidity_fee_receiver"].as_str().unwrap();
-            let solend_user_liquidity_token_account = settings["solend_user_liquidity_token_account"].as_str().unwrap();
-
-            let solend_reserve_liquidity_fee_receiver = Pubkey::from_str(solend_reserve_liquidity_fee_receiver)?;
-            let solend_user_liquidity_token_account = Pubkey::from_str(solend_user_liquidity_token_account)?;
-
             let proxy_borrow = Instruction {
                 program_id,
                 accounts: vec![                     
@@ -318,7 +330,7 @@ fn main() -> Result<(), Box<dyn Error>>{
                     AccountMeta::new_readonly(spl_token::id(), false),
                     AccountMeta::new_readonly(solend_program_id, false),
                 ],
-                data: ([2, 128, 150, 152, 0, 0, 0, 0, 0]).to_vec(),
+                data: vec![2, 128, 150, 152, 0, 0, 0, 0, 0],
             };
 
             (vec![proxy_borrow], maker_keypair)

@@ -3,6 +3,7 @@ pub mod instruction;
 pub mod processor;
 pub mod state;
 pub mod helpers;
+pub mod callbacks;
 pub mod verify_sign;
 pub mod utils;
 

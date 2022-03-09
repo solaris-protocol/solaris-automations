@@ -23,8 +23,9 @@ use crate::{
         //get_amounts::process_get_amounts,
         get_amounts::{get_maker_amount, get_taker_amount}, 
     },
-    verify_sign::is_valid_signature,
-    error::SolarisAutoError,
+    callbacks::{
+        process_callback::process_callback,
+    },
     instruction::{
         SolarisAutoInstruction,
         FillOrderArgs,
@@ -44,6 +45,8 @@ use crate::{
         create_collateral_token_account,
         solend_init_obligation,
     },
+    verify_sign::is_valid_signature,
+    error::SolarisAutoError,
 };
 
 pub struct Processor;
@@ -87,7 +90,7 @@ impl Processor {
     }
 
     pub fn process_fill_order(
-        program_id: &Pubkey,
+        _program_id: &Pubkey,
         accounts: &[AccountInfo],
         args: FillOrderArgs,
     ) -> ProgramResult {
@@ -257,64 +260,8 @@ impl Processor {
                     ],
                 )?;
 
-                // TODO: callback
-                let refresh_reserve = Instruction{
-                    program_id: *callback_infos[0].key,
-                    accounts: vec![
-                        AccountMeta::new(*callback_infos[3].key, false),
-                        AccountMeta::new_readonly(*callback_infos[14].key, false),
-                        AccountMeta::new_readonly(*callback_infos[15].key, false),
-                        AccountMeta::new_readonly(*callback_infos[12].key, false),
-                    ],
-                    data: vec![3],
-                };
-    
-                let refresh_obligation = Instruction{
-                    program_id: *callback_infos[0].key,
-                    accounts: vec![
-                        AccountMeta::new(*callback_infos[4].key, false),
-                        AccountMeta::new_readonly(*callback_infos[12].key, false),
-                        AccountMeta::new_readonly(*callback_infos[3].key, false),
-                        AccountMeta::new_readonly(*callback_infos[3].key, false),
-                    ],
-                    data: vec![7],
-                };
-
-                let solend_repay = Instruction {
-                    program_id: *callback_infos[0].key,
-                    accounts: vec![
-                        AccountMeta::new(*callback_infos[1].key, false),
-                        AccountMeta::new(*callback_infos[2].key, false),
-                        AccountMeta::new(*callback_infos[3].key, false),
-                        AccountMeta::new(*callback_infos[4].key, false),
-                        AccountMeta::new_readonly(*callback_infos[5].key, false),
-                        AccountMeta::new_readonly(*callback_infos[6].key, false),
-                        AccountMeta::new(*callback_infos[7].key, false),
-                        AccountMeta::new(*callback_infos[8].key, false),
-                        AccountMeta::new(*callback_infos[9].key, false),
-                        AccountMeta::new(*callback_infos[10].key, true),
-                        AccountMeta::new(*callback_infos[11].key, true),
-                        AccountMeta::new_readonly(*callback_infos[12].key, false),
-                        AccountMeta::new_readonly(*callback_infos[13].key, false),
-                    ],
-                    data: vec![15, 128, 150, 152, 0, 0, 0, 0, 0],
-                }; 
- 
-                invoke(
-                    &refresh_reserve,
-                    &callback_infos,
-                )?;
-
-                invoke(
-                    &refresh_obligation,
-                    &callback_infos,
-                )?;
-
-                invoke_signed(
-                    &solend_repay,
-                    &callback_infos,
-                    &[&get_seeds_delegate()],
-                )?;
+                // Assert accounts match with onchain_order.accounts
+                process_callback(&onchain_order.callback, &callback_infos)?;
 
                 // Maker => Taker
                 invoke_signed(
@@ -348,7 +295,7 @@ impl Processor {
     }
 
     pub fn process_solend_proxy_deposit_reserve_liquidity_and_obligation_collateral(
-        program_id: &Pubkey,
+        _program_id: &Pubkey,
         accounts: &[AccountInfo],
         liquidity_amount: u64,
     ) -> ProgramResult {
@@ -356,18 +303,33 @@ impl Processor {
 
         let mut solend_deposit_infos: Vec<AccountInfo> = 
             account_info_iter
-                .take(12)
+                .take(14)
                 .cloned()
                 .collect();  
 
-        let transfer_authority = next_account_info(account_info_iter)?;
-        let clock = next_account_info(account_info_iter)?;
         let token_program = next_account_info(account_info_iter)?;
+        let source_user_liquidity_ta = next_account_info(account_info_iter)?;
+        let maker = next_account_info(account_info_iter)?;
         let solend_program = next_account_info(account_info_iter)?;
         
-        solend_deposit_infos.push(transfer_authority.clone()); // 12
-        solend_deposit_infos.push(clock.clone()); // 13
         solend_deposit_infos.push(token_program.clone()); // 14
+
+        invoke(
+            &spl_token::instruction::transfer(
+                token_program.key,
+                source_user_liquidity_ta.key,
+                solend_deposit_infos[0].key,
+                maker.key,
+                &[maker.key],
+                liquidity_amount,
+            )?,
+            &[
+                source_user_liquidity_ta.clone(),
+                solend_deposit_infos[0].clone(),
+                maker.clone(),
+                token_program.clone(),
+            ],
+        )?;
 
         let mut data = [0; 9];
         LittleEndian::write_u64(&mut data[1..9], liquidity_amount);
@@ -405,7 +367,7 @@ impl Processor {
     }
 
     pub fn process_solend_proxy_borrow_obligation_liquidity(
-        program_id: &Pubkey,
+        _program_id: &Pubkey,
         accounts: &[AccountInfo],
         liquidity_amount: u64,
     ) -> ProgramResult {
@@ -528,7 +490,7 @@ impl Processor {
     }
 
     pub fn process_solend_init_accounts_for_delegate(
-        program_id: &Pubkey,
+        _program_id: &Pubkey,
         accounts: &[AccountInfo],
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();

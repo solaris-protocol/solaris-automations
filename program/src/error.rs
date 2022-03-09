@@ -24,6 +24,9 @@ pub enum SolarisAutoError {
     #[error("Cannot deserialize instructions for helper OR")]
     InvalidInstrOr,
 
+    #[error("Cannot deserialize callback instruction")]
+    InvalidCallbackInst,
+
     #[error("First instruction must be Ed25519 instruction")]
     InvalidInstrIndex,
     #[error("Program id for sign verify instruction must be Ed25519")]

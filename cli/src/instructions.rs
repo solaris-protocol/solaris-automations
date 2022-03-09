@@ -18,8 +18,6 @@ pub struct Order {
     pub maker_asset: Pubkey,
     pub taker_asset: Pubkey,
     pub maker: Pubkey,
-    pub receiver: Pubkey,
-    pub allowed_sender: Pubkey,
     pub making_amount: u64,
     pub taking_amount: u64,
     pub get_maker_amount: Vec<u8>,
@@ -34,7 +32,6 @@ pub struct FillOrderArgs {
     pub order: Option<Order>,
     pub making_amount: u64,
     pub taking_amount: u64,
-    pub threshold_amount: u64,
     pub get_maker_amount_infos_num: u8,
     pub get_taker_amount_infos_num: u8, 
     pub predicate_infos_num: u8,
@@ -148,7 +145,6 @@ pub fn fill_order(
         order,
         making_amount,
         taking_amount,
-        threshold_amount,
         get_maker_amount_infos_num: get_maker_amount_accounts.len() as u8,
         get_taker_amount_infos_num: get_taker_amount_accounts.len() as u8,
         predicate_infos_num: predicate_accounts.len() as u8,
@@ -186,7 +182,8 @@ pub fn fill_order(
 
     if !callback_accounts.is_empty() {
         accounts.push(AccountMeta::new_readonly(callback_accounts[0], false));
-        callback_accounts[1..].iter()
+        accounts.push(AccountMeta::new_readonly(callback_accounts[1], false));
+        callback_accounts[2..].iter()
             .for_each(|id| {
                 if *id == sysvar::clock::ID {
                     accounts.push(AccountMeta::new_readonly(*id, false));

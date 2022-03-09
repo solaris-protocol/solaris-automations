@@ -24,14 +24,14 @@ pub fn check_predicate(
 }
 
 fn _check_predicate<F>(
-    inst: &[u8],
+    instr: &[u8],
     accounts: &[AccountInfo],
-    invoke_predicate: F
+    invoke_predicate: F,
 ) -> ProgramResult 
     where F: Fn(&Instruction, &[AccountInfo]) -> ProgramResult {
     // TODO: Find a way to avoid `bincode::deserialize` because
     //       it takes lots of CU.
-    bincode::deserialize::<Instruction>(inst)
+    bincode::deserialize::<Instruction>(instr)
         .or(Err(ProgramError::from(SolarisAutoError::InvalidPredicateInst)))
         .and_then(|predicate| {
             match predicate.program_id.as_ref() {

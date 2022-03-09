@@ -28,7 +28,6 @@ pub const HELPER_PYTH_ID: &[u8] = &[70, 176, 37, 12, 106, 201, 74, 156, 64, 246,
 /// 0. `[]` Helper pyth program id: 5kwKgdtbBN4HtGHtTuhDr37vJWAxTfx8QkxFGWwFqeoq
 /// 1. `[]` Pyth price account: https://pyth.network/developers/accounts/?cluster=devnet#
 /// 
-/// 
 /// Instruction data format is 
 /// ```
 /// pub struct HelperPythPrice {
@@ -59,10 +58,9 @@ pub fn process_pyth_price(
     let amount = byteorder::LE::read_u64(&instr.data[0..8]);
     let less_than_pyth_price = instr.data[8] != 0;
 
-    // TODO: comparison with conf
+    // TODO: comparison with +-conf
     match less_than_pyth_price {
         true => {
-            msg!("Required price {} less than pyth_price", amount);
             if amount >= pyth_price.price.try_into().unwrap() {
                 return Err(SolarisAutoError::OraclePredicateFailed.into())
             }
