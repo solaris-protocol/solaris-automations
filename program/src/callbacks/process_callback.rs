@@ -21,7 +21,7 @@ pub fn process_callback(
         .and_then(|callback| {
             match callback.program_id.as_ref() {
                 liquidation_protection::CALLBACK_SOLEND_LIQUIDATION_PROTECTION => {
-                    liquidation_protection::process_callback_solend_liquidation_protection(&callback, accounts)
+                    liquidation_protection::process_callback_solend_repay_obligation_liquidity(&callback, accounts)
                 },
                 _ => invoke(&callback, accounts)
             }

@@ -1,0 +1,18 @@
+{
+    "maker_asset": "zVzi5VAf4qMEwzv7NXECVx5v2pQ7xnqVVjCXZwS9XzA",
+    "taker_asset": "zVzi5VAf4qMEwzv7NXECVx5v2pQ7xnqVVjCXZwS9XzA",
+    "maker": "/mnt/c/solana/wallet/my-keypair.json",
+    "making_amount": 20000000,
+    "taking_amount": 14000000,
+    "get_maker_amount": [],
+    "get_taker_amount": [],
+
+    "predicate": "lending_healthfactor",
+    "predicate_lending_protocol": "solend",
+    "predicate_healthfactor": 9,
+    
+    "callback": "liquidation_protection",
+    "callback_lending_protocol": "solend",
+
+    "delegate": "B4jsXjaAdFPEti6nRGFTwAb2NFaQ7tLriDoryBHUjzfy"
+}

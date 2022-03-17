@@ -22,8 +22,6 @@ pub struct Order {
     pub maker: Pubkey,
     pub making_amount: u64,
     pub taking_amount: u64,
-    pub get_maker_amount: Vec<u8>,
-    pub get_taker_amount: Vec<u8>,
     pub predicate: Vec<u8>,
     pub callback: Vec<u8>,
 }
@@ -34,8 +32,6 @@ pub struct FillOrderArgs {
     pub order: Option<Order>,
     pub making_amount: u64,
     pub taking_amount: u64,
-    pub get_maker_amount_infos_num: u8,
-    pub get_taker_amount_infos_num: u8, 
     pub predicate_infos_num: u8,
     pub callback_infos_num: u8,
 }
@@ -155,8 +151,6 @@ pub fn fill_order(
     taker: &Pubkey,
     onchain_order: &Pubkey, 
     delegate: &Pubkey,
-    get_maker_amount_accounts: &[Pubkey],
-    get_taker_amount_accounts: &[Pubkey],
     predicate_accounts: &[Pubkey],
     callback_accounts: &[Pubkey],
     taker_ta_taker_asset_account: &Pubkey,
@@ -175,8 +169,6 @@ pub fn fill_order(
         order,
         making_amount,
         taking_amount,
-        get_maker_amount_infos_num: get_maker_amount_accounts.len() as u8,
-        get_taker_amount_infos_num: get_taker_amount_accounts.len() as u8,
         predicate_infos_num: predicate_accounts.len() as u8,
         callback_infos_num: callback_accounts.len() as u8,   
     };
@@ -191,11 +183,7 @@ pub fn fill_order(
         AccountMeta::new(*onchain_order, false),
         AccountMeta::new_readonly(system_program::ID, false),
     ];
-
-    get_maker_amount_accounts.iter()
-        .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
-    get_taker_amount_accounts.iter()
-        .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
+    
     predicate_accounts.iter()
         .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
     callback_accounts.iter()

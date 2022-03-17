@@ -32,7 +32,7 @@ pub const HELPER_PYTH_ID: &[u8] = &[70, 176, 37, 12, 106, 201, 74, 156, 64, 246,
 /// ```
 /// pub struct HelperPythPrice {
 ///     amount: u64,
-///     less_than_pyth_price: bool,
+///     price_less_than_amount: bool,
 /// }
 /// ```
 pub fn process_pyth_price(
@@ -56,21 +56,25 @@ pub fn process_pyth_price(
     msg!("price_conf is {:?}", pyth_price);
 
     let amount = byteorder::LE::read_u64(&instr.data[0..8]);
-    let less_than_pyth_price = instr.data[8] != 0;
+    let price_less_than_amount = instr.data[8] != 0;
+
+    let actual_price: u64 = pyth_price.price.try_into().unwrap();
 
     // TODO: comparison with +-conf
-    match less_than_pyth_price {
+    match price_less_than_amount {
         true => {
-            if amount >= pyth_price.price.try_into().unwrap() {
-                return Err(SolarisAutoError::OraclePredicateFailed.into())
+            msg!("Required than actual price less than {}", amount);
+            if actual_price < amount {
+                return Ok(())
             }
         },
         false => {
-            if amount < pyth_price.price.try_into().unwrap() {
-                return Err(SolarisAutoError::OraclePredicateFailed.into())
+            msg!("Required than actual price more than {}", amount);
+            if actual_price >= amount{
+                return Ok(())
             }
         }
     }
 
-    Ok(())
+    return Err(SolarisAutoError::OraclePredicateFailed.into())
 }

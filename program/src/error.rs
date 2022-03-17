@@ -49,6 +49,8 @@ pub enum SolarisAutoError {
     InvalidOwnerProgramId,
     #[error("Oracle predicate failed")]
     OraclePredicateFailed,
+    #[error("Lending healthfactor predicate failed")]
+    LendingHealthfactorFailed,
 
     #[error("Order already closed")]
     OrderClosed,
@@ -57,6 +59,9 @@ pub enum SolarisAutoError {
     DataTypeMissmatch,
     #[error("Order must be provided in first fill")]
     OrderIsNone,
+
+    #[error("Math overflow")]
+    MathOverflow,
 }
 
 impl PrintProgramError for SolarisAutoError {

@@ -13,7 +13,7 @@
 
     "callback_solend_liquidation_protection_id": "3Aix9sK31V2sSLwhbnBcYH6FtN79oTXDLN6vskjPsTbj", 
 
-    "instruction_num": 0,
+    "instruction_num": 2,
 
     "maker_keypair": "/mnt/c/solana/wallet/my-keypair.json",
     "taker_keypair": "/mnt/c/solana/wallet/my-keypair2.json",

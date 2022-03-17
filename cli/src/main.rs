@@ -131,7 +131,6 @@ fn main() -> Result<(), Box<dyn Error>>{
     let taker_ta_taker_asset = Pubkey::from_str(taker_ta_taker_asset)?;
     let maker_ta_taker_asset = Pubkey::from_str(maker_ta_taker_asset)?;
 
-
     let delegate_id = get_pda_delegate_id(&program_id);
 
     let solend_program_id = Pubkey::from_str(solend_program_id)?;
@@ -330,7 +329,7 @@ fn main() -> Result<(), Box<dyn Error>>{
                     AccountMeta::new_readonly(spl_token::id(), false),
                     AccountMeta::new_readonly(solend_program_id, false),
                 ],
-                data: vec![2, 128, 150, 152, 0, 0, 0, 0, 0],
+                data: vec![2, 160, 134, 1, 0, 0, 0, 0, 0],
             };
 
             (vec![proxy_borrow], maker_keypair)

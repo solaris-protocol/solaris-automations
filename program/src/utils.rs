@@ -59,8 +59,6 @@ pub fn create_onchain_order(
 ) -> Result<Instruction, ProgramError> {
     let rent = Rent::get()?;
     let size = ONCHAIN_ORDER_STATE_SIZE + 
-        4 + order.get_maker_amount.len() +
-        4 + order.get_taker_amount.len() +
         4 + order.predicate.len() +
         4 + order.callback.len();
 

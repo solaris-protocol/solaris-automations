@@ -37,8 +37,6 @@ pub struct OnchainOrder {
     pub making_amount: u64,
     pub taking_amount: u64,
     pub remaining_maker_amount: u64,
-    pub get_maker_amount: Vec<u8>,
-    pub get_taker_amount: Vec<u8>,
     pub predicate: Vec<u8>,
     pub callback: Vec<u8>,
     pub stage: OrderStage,

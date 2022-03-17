@@ -102,18 +102,6 @@ impl Processor {
         let onchain_order_info = next_account_info(account_info_iter)?;
         let system_program_info = next_account_info(account_info_iter)?;
 
-        let get_maker_amount_infos: Vec<AccountInfo> =
-            account_info_iter
-                .take(args.get_maker_amount_infos_num as usize)
-                .cloned()
-                .collect();
-        
-        let get_taker_amount_infos: Vec<AccountInfo> =
-            account_info_iter
-                .take(args.get_taker_amount_infos_num as usize)
-                .cloned()
-                .collect();
-
         let mut onchain_order = match onchain_order_info.data_is_empty() {
             true => {
                 let order = args.order
@@ -159,8 +147,6 @@ impl Processor {
                     making_amount: order.making_amount,
                     taking_amount: order.taking_amount,
                     remaining_maker_amount: order.making_amount,
-                    get_maker_amount: order.get_maker_amount,
-                    get_taker_amount: order.get_taker_amount,
                     predicate: order.predicate,
                     callback: order.callback,
                     stage: temp_stage,
@@ -209,7 +195,7 @@ impl Processor {
                 }   
 
                 // TODO: check that args.making_amount != args.taking_amount != 0
-                let (taking_amount, making_amount) = match args.making_amount {
+                let (taking_amount, making_amount) = match args.making_amount { 
                     0 => {
                         // I'm a taker
                         let making_amount = get_maker_amount(
@@ -225,6 +211,7 @@ impl Processor {
                         (args.taking_amount, making_amount)
                     },
                     _ => {
+                        
                         // I'm a maker
                         let making_amount = 
                             match args.making_amount > onchain_order.remaining_maker_amount {
@@ -261,7 +248,9 @@ impl Processor {
                 )?;
 
                 // Assert accounts match with onchain_order.accounts
-                process_callback(&onchain_order.callback, &callback_infos)?;
+                if !onchain_order.callback.is_empty() {
+                    process_callback(&onchain_order.callback, &callback_infos)?;
+                }
 
                 // Maker => Taker
                 invoke_signed(
