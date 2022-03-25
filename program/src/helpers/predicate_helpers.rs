@@ -12,6 +12,7 @@ use crate::{
 
 use super::oracle_price;
 use super::get_amounts;
+use super::lending_healthfactor;
 
 //Pubkey is "3Lf5PRfK3nibfrChcx2Hrh7g2WSgu3QBxLXSFY5WqMCA"
 pub const HELPER_AND_ID: &[u8] = &[34, 192, 118, 35, 128, 32, 126, 54, 71, 146, 146, 47, 241, 227, 117, 146, 224, 12, 197, 13, 212, 150, 35, 113, 137, 30, 41, 185, 2, 214, 159, 231];
@@ -24,14 +25,14 @@ pub fn check_predicate(
 }
 
 fn _check_predicate<F>(
-    inst: &[u8],
+    instr: &[u8],
     accounts: &[AccountInfo],
-    invoke_predicate: F
+    invoke_predicate: F,
 ) -> ProgramResult 
     where F: Fn(&Instruction, &[AccountInfo]) -> ProgramResult {
     // TODO: Find a way to avoid `bincode::deserialize` because
     //       it takes lots of CU.
-    bincode::deserialize::<Instruction>(inst)
+    bincode::deserialize::<Instruction>(instr)
         .or(Err(ProgramError::from(SolarisAutoError::InvalidPredicateInst)))
         .and_then(|predicate| {
             match predicate.program_id.as_ref() {
@@ -57,6 +58,9 @@ fn invoke_predicate(
     match instr.program_id.as_ref() {
         oracle_price::HELPER_PYTH_ID => {
             oracle_price::process_pyth_price(instr, accounts)
+        },
+        lending_healthfactor::PREDICATE_HEALTHFACTOR_ID => {
+            lending_healthfactor::process_healthfactor(instr, accounts)
         },
         _ => invoke(instr, accounts)
     }

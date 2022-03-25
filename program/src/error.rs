@@ -24,6 +24,9 @@ pub enum SolarisAutoError {
     #[error("Cannot deserialize instructions for helper OR")]
     InvalidInstrOr,
 
+    #[error("Cannot deserialize callback instruction")]
+    InvalidCallbackInst,
+
     #[error("First instruction must be Ed25519 instruction")]
     InvalidInstrIndex,
     #[error("Program id for sign verify instruction must be Ed25519")]
@@ -46,6 +49,8 @@ pub enum SolarisAutoError {
     InvalidOwnerProgramId,
     #[error("Oracle predicate failed")]
     OraclePredicateFailed,
+    #[error("Lending healthfactor predicate failed")]
+    LendingHealthfactorFailed,
 
     #[error("Order already closed")]
     OrderClosed,
@@ -54,6 +59,9 @@ pub enum SolarisAutoError {
     DataTypeMissmatch,
     #[error("Order must be provided in first fill")]
     OrderIsNone,
+
+    #[error("Math overflow")]
+    MathOverflow,
 }
 
 impl PrintProgramError for SolarisAutoError {

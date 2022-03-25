@@ -1,0 +1,13 @@
+{
+    "cluster": "devnet",
+
+    "program_id": "HX8vWLXQoVt4EsxMYUq7BHy1Bg9TRfc5YeRo4oqBnipP",
+
+    "payer_keypair": "/mnt/c/solana/wallet/my-keypair2.json",
+
+    "taker_ta_maker_asset": "DNBQwQxY7SXKyQHQgc9ZaPpNh1P8XxTxAo8UDcDHMjhc",
+    "maker_ta_maker_asset": "AA3xpXu6j5JbnLVjekHhE39d4fXuJvusJbroinFciiEP",
+
+    "taker_ta_taker_asset": "DNBQwQxY7SXKyQHQgc9ZaPpNh1P8XxTxAo8UDcDHMjhc",
+    "maker_ta_taker_asset": "AA3xpXu6j5JbnLVjekHhE39d4fXuJvusJbroinFciiEP"
+}

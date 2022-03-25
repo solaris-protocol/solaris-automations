@@ -1,4 +1,3 @@
-use serde::{Serialize, Deserialize};
 use solana_sdk::{
     pubkey::Pubkey,
     instruction::{Instruction, AccountMeta},
@@ -12,7 +11,7 @@ use borsh::{
     BorshSchema,
 };
 
-#[derive(BorshSchema, BorshSerialize, BorshDeserialize)]
+#[derive(BorshSchema, BorshSerialize, BorshDeserialize, Clone)]
 pub struct Order {
     pub salt: u64,
     pub maker_asset: Pubkey,
@@ -20,8 +19,6 @@ pub struct Order {
     pub maker: Pubkey,
     pub making_amount: u64,
     pub taking_amount: u64,
-    pub get_maker_amount: Vec<u8>,
-    pub get_taker_amount: Vec<u8>,
     pub predicate: Vec<u8>,
     pub callback: Vec<u8>,
 }
@@ -32,8 +29,6 @@ pub struct FillOrderArgs {
     pub order: Option<Order>,
     pub making_amount: u64,
     pub taking_amount: u64,
-    pub get_maker_amount_infos_num: u8,
-    pub get_taker_amount_infos_num: u8, 
     pub predicate_infos_num: u8,
     pub callback_infos_num: u8,
 }
@@ -113,6 +108,7 @@ pub enum SolarisAutoInstruction {
     InitSolendAccountsForDelegate,
 }
 
+#[derive(Debug)]
 pub enum OrderStage {
     Create,
     Filled,
@@ -125,10 +121,10 @@ pub fn fill_order(
     taker: &Pubkey,
     onchain_order: &Pubkey, 
     delegate: &Pubkey,
-    get_maker_amount_accounts: &[Pubkey],
-    get_taker_amount_accounts: &[Pubkey],
-    predicate_accounts: &[Pubkey],
-    callback_accounts: &[Pubkey],
+    //get_maker_amount_accounts: &[Pubkey],
+    //get_taker_amount_accounts: &[Pubkey],
+    mut predicate_accounts: Vec<AccountMeta>,
+    mut callback_accounts: Vec<AccountMeta>,
     taker_ta_taker_asset_account: &Pubkey,
     maker_ta_taker_asset_account: &Pubkey,
     taker_ta_maker_asset_account: &Pubkey,
@@ -145,8 +141,8 @@ pub fn fill_order(
         order,
         making_amount,
         taking_amount,
-        get_maker_amount_infos_num: get_maker_amount_accounts.len() as u8,
-        get_taker_amount_infos_num: get_taker_amount_accounts.len() as u8,
+        //get_maker_amount_infos_num: get_maker_amount_accounts.len() as u8,
+        //get_taker_amount_infos_num: get_taker_amount_accounts.len() as u8,
         predicate_infos_num: predicate_accounts.len() as u8,
         callback_infos_num: callback_accounts.len() as u8,   
     };
@@ -161,7 +157,7 @@ pub fn fill_order(
         AccountMeta::new(*onchain_order, false),
         AccountMeta::new_readonly(system_program::ID, false),
     ];
-
+/* 
     if !get_maker_amount_accounts.is_empty(){
         accounts.push(AccountMeta::new_readonly(get_maker_amount_accounts[0], false));
         get_maker_amount_accounts[1..].iter()
@@ -173,33 +169,16 @@ pub fn fill_order(
         get_taker_amount_accounts[1..].iter()
             .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
     }
-
-    if !predicate_accounts.is_empty() {
-        accounts.push(AccountMeta::new_readonly(predicate_accounts[0], false));
-        predicate_accounts[1..].iter()
-            .for_each(|id| accounts.push(AccountMeta::new(*id, false)));
-    }
-
-    if !callback_accounts.is_empty() {
-        accounts.push(AccountMeta::new_readonly(callback_accounts[0], false));
-        accounts.push(AccountMeta::new_readonly(callback_accounts[1], false));
-        callback_accounts[2..].iter()
-            .for_each(|id| {
-                if *id == sysvar::clock::ID {
-                    accounts.push(AccountMeta::new_readonly(*id, false));
-                } else if *id == spl_token::ID {
-                    accounts.push(AccountMeta::new_readonly(*id, false));
-                } else {
-                    accounts.push(AccountMeta::new(*id, false));
-                }
-            });
-    }
+*/
 
     match order_stage {
         OrderStage::Create => {
 
         },
         OrderStage::Filled => {
+            accounts.append(&mut predicate_accounts);
+            accounts.append(&mut callback_accounts);
+
             accounts.push(AccountMeta::new(*taker_ta_taker_asset_account, false));
             accounts.push(AccountMeta::new(*maker_ta_taker_asset_account, false));
             accounts.push(AccountMeta::new(*maker_ta_maker_asset_account, false));

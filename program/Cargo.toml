@@ -19,6 +19,7 @@ arrayref = "0.3.6"
 num-derive = "0.3"
 num-traits = "0.2"
 byteorder = "1.4.3"
+uint = "=0.9.0"
 
 chainlink_solana = "0.1.2"
 pyth-client = {version = "0.3.0", features = ["no-entrypoint"]}
